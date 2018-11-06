@@ -12,16 +12,18 @@ void generator(double* &MatrixA, double* &MatrixB, double* &MatrixC, int N) {
 		}
 	}
 }
-void multiplication(double* &MatrixA, double* &MatrixB, double* &MatrixC, int N) {
-	for (int i = 0; i<N; i++) {
-		for (int j = 0; j<N; j++) {
-			MatrixC[i*N + j] = 0;
-			for (int k = 0; k<N; k++) {
-				MatrixC[i*N + j] = MatrixC[i*N + j] + MatrixA[i*N + k] * MatrixB[k*N + j];
-			}
-		}
-	}
+void multiplication(double* &MatrixA, double* &MatrixB, double* &MatrixC, int Size) {
+    int BlockSize = 250;
+	int GridSize = int(Size / double(BlockSize)); 
+	for (int n = 0; n<GridSize; n++) 
+		for (int m = 0; m<GridSize; m++) 
+			for (int iter = 0; iter<GridSize; iter++) 
+				for (int i = n * BlockSize; i<(n + 1)*BlockSize; i++) 
+					for (int j = m * BlockSize; j<(m + 1)*BlockSize; j++) 
+						for (int k = iter * BlockSize; k<(iter + 1)*BlockSize; k++) 
+							MatrixC[i*Size + j] += MatrixA[i*Size + k] * MatrixB[k*Size + j];
 }
+
 void print(double* &MatrixA, double* &MatrixB, double* &MatrixC, int Size) {
 	cout << "Matrix A:" << endl;
 	for (int i = 0; i < Size; i++) {
@@ -47,7 +49,7 @@ void print(double* &MatrixA, double* &MatrixB, double* &MatrixC, int Size) {
 	}
 }
 int main() {
-	
+
 	int Size;
 	std::cin >> Size;
 

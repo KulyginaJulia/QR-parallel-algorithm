@@ -14,24 +14,17 @@ void generator(double* MatrixA, double* MatrixB, double* MatrixC, int N) {
 		}
 	}
 }
-void multiplication_block(double* MatrixA, double* MatrixB, double* MatrixC, int N, int ThreadNum) {
-	double sqThreadNum = sqrt((double)ThreadNum);
-	int GridSize = (int)(sqThreadNum);
-	int BlockSize = N / GridSize;
-	omp_set_num_threads(ThreadNum);
-#pragma omp parallel
-	{ 		
-		int ThreadID = omp_get_thread_num();
-		int RowIndex = ThreadID / GridSize;
-		int ColIndex = ThreadID % GridSize;
-		for (int iter = 0; iter < GridSize; iter++) {
-			for (int i = RowIndex * BlockSize; i < (RowIndex + 1) * BlockSize; i++)
-				for (int j = ColIndex * BlockSize; j < (ColIndex + 1) * BlockSize; j++)
-					for (int k = iter * BlockSize; k < (iter + 1) * BlockSize; k++)
-						MatrixC[i*N + j] += MatrixA[i*N + k] * MatrixB[k*N + j];
-		} 
-
-	}// pragma omp parallel
+void multiplication_block(double* MatrixA, double* MatrixB, double* MatrixC, int Size) { 
+	int BlockSize = 250;
+	int GridSize = (int)(Size / (double)(BlockSize));
+	#pragma omp parallel for
+	for (int n = 0; n<GridSize; n++)
+		for (int m = 0; m<GridSize; m++)
+			for (int iter = 0; iter<GridSize; iter++)
+				for (int i = n * BlockSize; i<(n + 1)*BlockSize; i++)
+					for (int j = m * BlockSize; j<(m + 1)*BlockSize; j++)
+						for (int k = iter * BlockSize; k<(iter + 1)*BlockSize; k++) 
+							MatrixC[i*Size + j] += MatrixA[i*Size + k] * MatrixB[k*Size + j];
 }
 
 void print(double* MatrixA, double* MatrixB, double* MatrixC, int Size) {
@@ -62,9 +55,7 @@ int main(int argc, char **argv) {
 
 	int t = 0;
 	int Size = 0; 
-	int ThredNum = 0;
 	scanf_s("%d", &Size);
-	scanf_s("%d", &ThredNum);
 	//sscanf_s(argv[1], "%d", &Size);
 	//if (argc < 2) {
 	//	printf("Error arguments command line");
@@ -87,7 +78,7 @@ int main(int argc, char **argv) {
 	generator(MatrixA, MatrixB, MatrixC, Size);
 	double start = omp_get_wtime();
 
-	multiplication_block(MatrixA, MatrixB, MatrixC, Size, ThredNum);
+	multiplication_block(MatrixA, MatrixB, MatrixC, Size);
 	double end = omp_get_wtime();
 	double delta = end - start;
 	if (Size < 1000)
