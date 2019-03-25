@@ -2,8 +2,17 @@
 #include <list>
 #include <vector>
 #include <cmath>
+#include <omp.h>
+#include <Eigen/Dense>
 
 using namespace std;
+void generator(double** &MatrixA, int N) {
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			MatrixA[i][j] = rand() % 100;
+		}
+	}
+}
 
 double Normirovka(double *s, int n) {
 	double sum = 0;
@@ -57,24 +66,18 @@ double** multiplication(double** MatrixA, double** MatrixB, int Size) {
 			}
 		}
 	}
-	//for (int i = 0; i < Size; i++) {
-	//	for (int j = 0; j < Size; j++) {
-	//		//MatrixC[j].push_back(0);
-	//		//floor(atof(buf) * 100 + 0.5) / 100
-	//		MatrixC[i][j] = std::floor(MatrixC[i][j] * 100 + 0.5) / 100;
-	//	}
-	//}
 	return MatrixC;
 }
 
-void check_result(double** MatrixA, double** MatrixQ, double** MatrixR, int size) {
+void check_result(double** &MatrixA, double** &MatrixQ, double** &MatrixR, int size) {
 	cout << "Check result matrices... " << endl;
 	bool flag_ok = true;
 	cout << "Check matrix R: " << endl;
+	double eps = pow(10, -14); //10 ^ (-13);
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 			if (i > j)
-				if (MatrixR[i][j] != 0) {
+				if (abs(MatrixR[i][j]) > eps) {
 					flag_ok = false;
 					cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= 0" << endl;
 				}
@@ -89,15 +92,14 @@ void check_result(double** MatrixA, double** MatrixQ, double** MatrixR, int size
 
 	cout << "Check A = Q*R: " << endl;
 	double** tmp_matrix = multiplication(MatrixQ, MatrixR, size);
-	for (int i = 0; i < size; i++) {
-		for (int j = 0; j < size; j++) {
-			if (MatrixA[i][j] != round(tmp_matrix[i][j])) {
-				flag_ok = false;
-				cout << "Mismatch! A[" << i << "][" << j << "] = " << MatrixA[i][j] << "!= " << round(tmp_matrix[i][j]) << " = Q*R[" << i << "][" << j << "]" << endl;
-
-			}
-		}
-	}
+	// checking norma(A-QR)?
+	
+	//for (int i = 0; i < size; i++) {
+	//	for (int j = 0; j < size; j++) {
+	//		cout << MatrixA[i][j] - tmp_matrix[i][j] << ' ';
+	//	}
+	//	cout << endl;
+	//}
 
 	if (flag_ok)
 		cout << "  OK" << endl;
@@ -106,37 +108,34 @@ void check_result(double** MatrixA, double** MatrixQ, double** MatrixR, int size
 	cout << "Done." << endl;
 }
 
-int main() {
-	double E[3][3] = { {1, 0, 0},
-				   {0, 1, 0},
-				   {0, 0, 1 }
-	};
-	int n = 3;
-	double** A = new double*[n];
+void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
+	double** E = new double*[n];
 	for (int i = 0; i < n; i++) {
-		A[i] = new double[n];
-	}	
-	A[0][0] = 1;	A[0][1] = -2;	A[0][2] = 1;
-	A[1][0] = 2; 	A[1][1] = -1; 	A[1][2] = 3;
-	A[2][0] = 2; 	A[2][1] = 3; 	A[2][2] = -4;
-	double** A_ = A;
-	double** Q;
+		E[i] = new double[n];
+	}
+	// initialize E
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < n; j++)
+			if (i == j)
+				E[i][j] = 1;
+			else
+				E[i][j] = 0;
 
 	for (int k = 0; k < n - 1; k++) {
-		cout << "Step " << k << endl;
+		//cout << "Step " << k << endl;
 		double* v = new double[n];
 		double* x = new double[n]; //столбец матрицы
-		cout << "  x = " << endl;
+		//cout << "  x = " << endl;
 		for (int j = 0; j < n; j++) {
 			if (j < k)
 				x[j] = 0;
-			else 
+			else
 				x[j] = A_[j][k];
-			cout << x[j] << endl;
+		//	cout << x[j] << endl;
 		}
-		cout << endl;
+		//cout << endl;
 		double norma_x = sqrt(Normirovka(x, n));
-		cout << "  Norma x = " << norma_x << endl;
+		//cout << "  Norma x = " << norma_x << endl;
 		for (int i = 0; i < n; i++) {
 			int signum = A_[k][k] > 0 ? 1 : -1;
 			if (i < k) {
@@ -147,18 +146,18 @@ int main() {
 			}
 
 		}
-		cout << "  v = ";
-		for (int j = 0; j < n; j++) {
-			cout << v[j] << " ";
-		}
+		//cout << "  v = ";
+		//for (int j = 0; j < n; j++) {
+		//	cout << v[j] << " ";
+		//}
 
 		double norm = Normirovka(v, n);
-		cout << "  Quad Norma v = " << norm << endl;
+		//cout << "  Quad Norma v = " << norm << endl;
 
 		// double sqrt_norm = sqrt(norm);
 		double** V = CreateMatrix_V(v, n);
-		cout << "  Matrix V:" << endl;
-		print_matrix(V, n);
+		//cout << "  Matrix V:" << endl;
+		//print_matrix(V, n);
 
 		double** P_current = new double*[n];
 		for (int i = 0; i < n; i++) {
@@ -168,14 +167,14 @@ int main() {
 				P_current[i][j] = val;
 			}
 		}
-		cout << "  Matrix P:" << endl;
-		print_matrix(P_current, n);
+		//cout << "  Matrix P:" << endl;
+		//print_matrix(P_current, n);
 
-		
+
 		A_ = multiplication(P_current, A_, n);
 
-		cout << "  Matrix R:" << endl;
-		print_matrix(A_, n);
+		//cout << "  Matrix R:" << endl;
+		//print_matrix(A_, n);
 		int g = 0;
 		if (k == 0)
 			copy_matrix(Q, P_current, n);
@@ -188,8 +187,44 @@ int main() {
 		delete P_current;
 		delete v;
 	}
-	double** R = A_;
+	R = A_;
+}
+
+int main() {
+	int n = 5;
+	double** A = new double*[n];
+
+	double** Q, **R;
+	for (int i = 0; i < n; i++) {
+		A[i] = new double[n];
+	}	
+	//A[0][0] = 1;	A[0][1] = -2;	A[0][2] = 1;
+	//A[1][0] = 2; 	A[1][1] = -1; 	A[1][2] = 3;
+	//A[2][0] = 2; 	A[2][1] = 3; 	A[2][2] = -4;
+	generator(A, n);
+	double** A_ = A;
+	double start = omp_get_wtime();
+
+
+	QRDecomposition(n, A_, Q, R);
+
+	double end = omp_get_wtime();
+	double delta = end - start;
+
+	//cout << "Matrix Q:" << endl;
+	//print_matrix(Q, n);
+	//cout << "Matrix R:" << endl;
+	//print_matrix(R, n);
 
 	check_result(A, Q, R, n);
+	cout << "Time for simple version: " << delta << endl;
+
+	start = omp_get_wtime();
+	Eigen::MatrixXd m = Eigen::MatrixXd::Random(5, 5);
+	auto q = m.householderQr().householderQ();
+
+	end = omp_get_wtime();
+	delta = end - start;
+	cout << "Time for eigen version: " << delta << endl;
 	return 0;
 }
