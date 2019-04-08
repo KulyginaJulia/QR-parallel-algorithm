@@ -6,6 +6,9 @@
 #include <Eigen/Dense>
 
 using namespace std;
+//using namespace Eigen;
+
+
 void generator(double** &MatrixA, int N) {
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
@@ -14,11 +17,16 @@ void generator(double** &MatrixA, int N) {
 	}
 }
 
-double Normirovka(double *s, int n) {
+double Norma(double *s, int n) {
 	double sum = 0;
 	for (int i = 0; i < n; i++)
 		sum += abs(s[i]) * abs(s[i]);
 	return sum;
+}
+
+void Normirovka(double* &s, int n, double norma) {
+	for (int i = 0; i < n; i++)
+		s[i] = s[i] / sqrt(norma);
 }
 
 double** CreateMatrix_V(double* v, int size) {
@@ -37,6 +45,8 @@ double** CreateMatrix_V(double* v, int size) {
 void print_matrix(double** &MatrixA, int Size) {
 	for (int i = 0; i < Size; i++) {
 		for (int j = 0; j < Size; j++) {
+			//cout << fixed;
+			//cout.precision(6);
 			cout << MatrixA[i][j] << ' ';
 		}
 		cout << endl;
@@ -73,7 +83,7 @@ void check_result(double** &MatrixA, double** &MatrixQ, double** &MatrixR, int s
 	cout << "Check result matrices... " << endl;
 	bool flag_ok = true;
 	cout << "Check matrix R: " << endl;
-	double eps = pow(10, -14); //10 ^ (-13);
+	double eps = pow(10, -14); //10 ^ (-14);
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 			if (i > j)
@@ -93,20 +103,99 @@ void check_result(double** &MatrixA, double** &MatrixQ, double** &MatrixR, int s
 	cout << "Check A = Q*R: " << endl;
 	double** tmp_matrix = multiplication(MatrixQ, MatrixR, size);
 	// checking norma(A-QR)?
-	
-	//for (int i = 0; i < size; i++) {
-	//	for (int j = 0; j < size; j++) {
-	//		cout << MatrixA[i][j] - tmp_matrix[i][j] << ' ';
-	//	}
-	//	cout << endl;
-	//}
+	double** MatrixA_QR = new double*[size];
+	for (int i = 0; i < size; i++) {
+		MatrixA_QR[i] = new double[size];
+		for (int j = 0; j < size; j++) {
+			MatrixA_QR[i][j] = MatrixA[i][j] - tmp_matrix[i][j];
+		}
+	}
+	//cout << "Matrix A-QR" << endl;
+	//print_matrix(MatrixA_QR, size);
+	double *vector_column = new double[size];
+	memset(vector_column, 0, size);
+	for (int i = 0; i < size; i++)
+	{
+		for (int j = 0; j < size; j++)
+			vector_column[i] += abs(MatrixA_QR[i][j]);
+	}
+	double max_abs = vector_column[0];
+	for (int i = 0; i < size; i++)
+	{
+		//cout << "vector_column = " << vector_column[i] << endl;
+		if (vector_column[i] > max_abs)
+			max_abs = vector_column[i];
+	}
+	cout << "max abs = " << max_abs << endl;
+	if (max_abs < eps)
+		cout << "  OK" << endl;
+	else
+		cout << "  ERR" << endl;
+	cout << "Done." << endl;
+}
 
+void check_with_eigen_result(double** &MatrixQ, double** &MatrixR, Eigen::MatrixXd MatrixQE, Eigen::MatrixXd MatrixRE, int size) {
+	cout << "Check result matrices with eigen results... " << endl;
+	bool flag_ok = true;
+	cout << "Check matrix R: " << endl;
+	double eps = pow(10, -14); //10 ^ (-14);
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			if (i < j)
+				if (abs(MatrixR[i][j] - MatrixRE(i, j)) > eps) {
+					flag_ok = false;
+					cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= R`["
+						<< i << "][" << j << "] = " << MatrixRE(i, j) << endl;
+				}
+		}
+	}
+	if (flag_ok)
+		cout << "  OK" << endl;
+	else
+		cout << "  ERR" << endl;
+	cout << "Done." << endl;
+	flag_ok = true;
+
+	cout << "Check Q: " << endl;
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			if (abs(MatrixQ[i][j] - MatrixQE(i, j)) > eps) {
+				flag_ok = false;
+				cout << "Q[" << i << "][" << j << "] = " << MatrixQ[i][j] << "!= Q`["
+					<< i << "][" << j << "] = " << MatrixQE(i, j) << endl;
+			}
+		}
+	}
 	if (flag_ok)
 		cout << "  OK" << endl;
 	else
 		cout << "  ERR" << endl;
 	cout << "Done." << endl;
 }
+
+void calculate_Q_matrix(double* &v, int n, double** &E, double** &A_, int k, double** &Q) {
+	double** V = CreateMatrix_V(v, n);
+	double** P_current = new double*[n];
+	for (int i = 0; i < n; i++) {
+		P_current[i] = new double[n];
+		for (int j = 0; j < n; j++) {
+			double val = E[i][j] - V[i][j] * 2;
+			P_current[i][j] = val;
+		}
+	}
+
+	A_ = multiplication(P_current, A_, n);
+	if (k == 0)
+		copy_matrix(Q, P_current, n);
+	else
+		Q = multiplication(P_current, Q, n);
+	// clear
+	for (int i = 0; i < n; i++)
+		delete P_current[i];
+
+	delete P_current;
+}
+
 
 void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 	double** E = new double*[n];
@@ -120,22 +209,22 @@ void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 				E[i][j] = 1;
 			else
 				E[i][j] = 0;
+	double** P = new double*[n]; // matrix of the v vectors
+	for (int i = 0; i < n; i++) {
+		P[i] = new double[n-1];
+	}
 
 	for (int k = 0; k < n - 1; k++) {
-		//cout << "Step " << k << endl;
+		// cout << "Step " << k << endl;
 		double* v = new double[n];
 		double* x = new double[n]; //столбец матрицы
-		//cout << "  x = " << endl;
 		for (int j = 0; j < n; j++) {
 			if (j < k)
 				x[j] = 0;
 			else
 				x[j] = A_[j][k];
-		//	cout << x[j] << endl;
 		}
-		//cout << endl;
-		double norma_x = sqrt(Normirovka(x, n));
-		//cout << "  Norma x = " << norma_x << endl;
+		double norma_x = sqrt(Norma(x, n));
 		for (int i = 0; i < n; i++) {
 			int signum = A_[k][k] > 0 ? 1 : -1;
 			if (i < k) {
@@ -146,62 +235,52 @@ void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 			}
 
 		}
-		//cout << "  v = ";
-		//for (int j = 0; j < n; j++) {
-		//	cout << v[j] << " ";
-		//}
+		double norm = Norma(v, n);
+		Normirovka(v, n, norm);
 
-		double norm = Normirovka(v, n);
-		//cout << "  Quad Norma v = " << norm << endl;
-
-		// double sqrt_norm = sqrt(norm);
-		double** V = CreateMatrix_V(v, n);
-		//cout << "  Matrix V:" << endl;
-		//print_matrix(V, n);
-
-		double** P_current = new double*[n];
+		// add v to P matrix as a column
 		for (int i = 0; i < n; i++) {
-			P_current[i] = new double[n];
-			for (int j = 0; j < n; j++) {
-				double val = E[i][j] - V[i][j] * 2 / norm;
-				P_current[i][j] = val;
-			}
+			P[k][i] = v[i];
 		}
-		//cout << "  Matrix P:" << endl;
-		//print_matrix(P_current, n);
 
-
-		A_ = multiplication(P_current, A_, n);
-
-		//cout << "  Matrix R:" << endl;
-		//print_matrix(A_, n);
-		int g = 0;
-		if (k == 0)
-			copy_matrix(Q, P_current, n);
-		else
-			Q = multiplication(P_current, Q, n);
-		// clear
-		for (int i = 0; i < n; i++)
-			delete P_current[i];
-
-		delete P_current;
+		calculate_Q_matrix(v, n, E, A_, k, Q);
 		delete v;
 	}
 	R = A_;
 }
 
-int main() {
-	int n = 5;
+double** Transpose_(double** &MatrixQ, int size) {
+	double** MatrixQ_ = new double*[size];
+	double tmp = 0;
+	for (int i = 0; i < size; i++) {
+		MatrixQ_[i] = new double[size];
+		for (int j = 0; j < size; j++) {
+			MatrixQ_[i][j] = MatrixQ[j][i];
+		}
+	}
+
+	return MatrixQ_;
+}
+
+int main(int argc, char **argv) {
+	int n = atoi(argv[1]);
+	int mode = atoi(argv[2]);
 	double** A = new double*[n];
 
 	double** Q, **R;
 	for (int i = 0; i < n; i++) {
 		A[i] = new double[n];
-	}	
-	//A[0][0] = 1;	A[0][1] = -2;	A[0][2] = 1;
-	//A[1][0] = 2; 	A[1][1] = -1; 	A[1][2] = 3;
-	//A[2][0] = 2; 	A[2][1] = 3; 	A[2][2] = -4;
-	generator(A, n);
+	}
+	cout.scientific;
+	if (mode == 0) {
+		n = 3;
+		A[0][0] = 1;	A[0][1] = -2;	A[0][2] = 1;
+		A[1][0] = 2; 	A[1][1] = -1; 	A[1][2] = 3;
+		A[2][0] = 2; 	A[2][1] = 3; 	A[2][2] = -4;
+	}
+	else 
+		generator(A, n);
+
 	double** A_ = A;
 	double start = omp_get_wtime();
 
@@ -210,21 +289,39 @@ int main() {
 
 	double end = omp_get_wtime();
 	double delta = end - start;
-
-	//cout << "Matrix Q:" << endl;
-	//print_matrix(Q, n);
-	//cout << "Matrix R:" << endl;
-	//print_matrix(R, n);
+	Q = Transpose_(Q, n);
+	std::cout << "Matrix Q:" << std::endl;
+	print_matrix(Q, n);
+	std::cout << "Matrix R:" << std::endl;
+	print_matrix(R, n);
 
 	check_result(A, Q, R, n);
-	cout << "Time for simple version: " << delta << endl;
+	std::cout << "Time for simple version: " << delta << std::endl;
+
+
+	Eigen::MatrixXd m(n, n);
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++)
+			m(i, j) = A[i][j];
+	}
+	auto qr = m.householderQr(); // casted type Matrix -> Householder matrix
 
 	start = omp_get_wtime();
-	Eigen::MatrixXd m = Eigen::MatrixXd::Random(5, 5);
-	auto q = m.householderQr().householderQ();
+	
+	auto r = qr.matrixQR(); // qr decomposition, r - upper triangle, vectors v - lower triangle
 
 	end = omp_get_wtime();
+
+	auto q = qr.householderQ(); // selection q
+	Eigen::MatrixXd thinQ(Eigen::MatrixXd::Identity(n, n));
+	thinQ = q * thinQ;
+
 	delta = end - start;
-	cout << "Time for eigen version: " << delta << endl;
+	std::cout << "Time for eigen version: " << delta << std::endl;
+	std::cout << "Matrix q " << endl << thinQ << std::endl;
+	std::cout << "Matrix r " << endl << r << std::endl;
+
+	check_with_eigen_result(Q, R, thinQ, r, n);
+
 	return 0;
 }
