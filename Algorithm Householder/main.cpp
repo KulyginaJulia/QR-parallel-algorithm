@@ -173,27 +173,40 @@ void check_with_eigen_result(double** &MatrixQ, double** &MatrixR, Eigen::Matrix
 	cout << "Done." << endl;
 }
 
-void calculate_Q_matrix(double* &v, int n, double** &E, double** &A_, int k, double** &Q) {
-	double** V = CreateMatrix_V(v, n);
-	double** P_current = new double*[n];
-	for (int i = 0; i < n; i++) {
-		P_current[i] = new double[n];
-		for (int j = 0; j < n; j++) {
-			double val = E[i][j] - V[i][j] * 2;
-			P_current[i][j] = val;
-		}
-	}
+double** calculate_Q_matrix(double** &P, int n, double** &E, double** &A_) {
 
-	A_ = multiplication(P_current, A_, n);
-	if (k == 0)
-		copy_matrix(Q, P_current, n);
-	else
-		Q = multiplication(P_current, Q, n);
-	// clear
+	double** Q = new double*[n];
 	for (int i = 0; i < n; i++)
-		delete P_current[i];
+		Q[i] = new double[n];
 
-	delete P_current;
+	for (int k = n - 2; k >= 0; k--) {
+		double* v = new double[n];
+		for (int i = 0; i < n; i++) {
+			v[i] = P[i][k];
+		}
+
+		double** V = CreateMatrix_V(v, n);
+		double** P_current = new double*[n];
+		for (int i = 0; i < n; i++) {
+			P_current[i] = new double[n];
+			for (int j = 0; j < n; j++) {
+				double val = E[i][j] - V[i][j] * 2;
+				P_current[i][j] = val;
+			}
+		}
+
+		if (k == n - 2)
+			copy_matrix(Q, P_current, n);
+		else
+			Q = multiplication(P_current, Q, n);
+		// clear
+		for (int i = 0; i < n; i++)
+			delete P_current[i];
+
+		delete P_current;
+		delete v;
+	}
+	return Q;
 }
 
 
@@ -211,7 +224,7 @@ void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 				E[i][j] = 0;
 	double** P = new double*[n]; // matrix of the v vectors
 	for (int i = 0; i < n; i++) {
-		P[i] = new double[n-1];
+		P[i] = new double[n];
 	}
 
 	for (int k = 0; k < n - 1; k++) {
@@ -237,15 +250,25 @@ void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 		}
 		double norm = Norma(v, n);
 		Normirovka(v, n, norm);
-
 		// add v to P matrix as a column
 		for (int i = 0; i < n; i++) {
-			P[k][i] = v[i];
+			P[i][k] = v[i];
 		}
 
-		calculate_Q_matrix(v, n, E, A_, k, Q);
+		double** V = CreateMatrix_V(v, n);
+		double** P_current = new double*[n];
+		for (int i = 0; i < n; i++) {
+			P_current[i] = new double[n];
+			for (int j = 0; j < n; j++) {
+				double val = E[i][j] - V[i][j] * 2;
+				P_current[i][j] = val;
+			}
+		}
+		A_ = multiplication(P_current, A_, n);
+
 		delete v;
 	}
+	Q = calculate_Q_matrix(P, n, E, A_);
 	R = A_;
 }
 
@@ -289,7 +312,7 @@ int main(int argc, char **argv) {
 
 	double end = omp_get_wtime();
 	double delta = end - start;
-	Q = Transpose_(Q, n);
+	// Q = Transpose_(Q, n);
 	std::cout << "Matrix Q:" << std::endl;
 	print_matrix(Q, n);
 	std::cout << "Matrix R:" << std::endl;
@@ -317,9 +340,10 @@ int main(int argc, char **argv) {
 	thinQ = q * thinQ;
 
 	delta = end - start;
-	std::cout << "Time for eigen version: " << delta << std::endl;
-	std::cout << "Matrix q " << endl << thinQ << std::endl;
-	std::cout << "Matrix r " << endl << r << std::endl;
+	cout << "Time for eigen version: " << delta << endl;
+	cout << "Matrix q " << endl << thinQ << endl;
+	cout << "Matrix r " << endl;
+	cout << r << endl;
 
 	check_with_eigen_result(Q, R, thinQ, r, n);
 
