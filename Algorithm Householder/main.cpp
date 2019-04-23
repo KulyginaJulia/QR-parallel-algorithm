@@ -79,6 +79,19 @@ double** multiplication(double** MatrixA, double** MatrixB, int Size) {
 	return MatrixC;
 }
 
+double** Transpose_(double** &MatrixQ, int size) {
+	double** MatrixQ_ = new double*[size];
+	double tmp = 0;
+	for (int i = 0; i < size; i++) {
+		MatrixQ_[i] = new double[size];
+		for (int j = 0; j < size; j++) {
+			MatrixQ_[i][j] = MatrixQ[j][i];
+		}
+	}
+
+	return MatrixQ_;
+}
+
 void check_result(double** &MatrixA, double** &MatrixQ, double** &MatrixR, int size) {
 	cout << "Check result matrices... " << endl;
 	bool flag_ok = true;
@@ -89,7 +102,7 @@ void check_result(double** &MatrixA, double** &MatrixQ, double** &MatrixR, int s
 			if (i > j)
 				if (abs(MatrixR[i][j]) > eps) {
 					flag_ok = false;
-					cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= 0" << endl;
+					//cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= 0" << endl;
 				}
 		}
 	}
@@ -113,9 +126,10 @@ void check_result(double** &MatrixA, double** &MatrixQ, double** &MatrixR, int s
 	//cout << "Matrix A-QR" << endl;
 	//print_matrix(MatrixA_QR, size);
 	double *vector_column = new double[size];
-	memset(vector_column, 0, size);
+	
 	for (int i = 0; i < size; i++)
 	{
+		vector_column[i] = 0;
 		for (int j = 0; j < size; j++)
 			vector_column[i] += abs(MatrixA_QR[i][j]);
 	}
@@ -144,8 +158,8 @@ void check_with_eigen_result(double** &MatrixQ, double** &MatrixR, Eigen::Matrix
 			if (i < j)
 				if (abs(MatrixR[i][j] - MatrixRE(i, j)) > eps) {
 					flag_ok = false;
-					cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= R`["
-						<< i << "][" << j << "] = " << MatrixRE(i, j) << endl;
+					//cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= R`["
+					//	<< i << "][" << j << "] = " << MatrixRE(i, j) << endl;
 				}
 		}
 	}
@@ -161,8 +175,8 @@ void check_with_eigen_result(double** &MatrixQ, double** &MatrixR, Eigen::Matrix
 		for (int j = 0; j < size; j++) {
 			if (abs(MatrixQ[i][j] - MatrixQE(i, j)) > eps) {
 				flag_ok = false;
-				cout << "Q[" << i << "][" << j << "] = " << MatrixQ[i][j] << "!= Q`["
-					<< i << "][" << j << "] = " << MatrixQE(i, j) << endl;
+				//cout << "Q[" << i << "][" << j << "] = " << MatrixQ[i][j] << "!= Q`["
+				//	<< i << "][" << j << "] = " << MatrixQE(i, j) << endl;
 			}
 		}
 	}
@@ -209,6 +223,50 @@ double** calculate_Q_matrix(double** &P, int n, double** &E, double** &A_) {
 	return Q;
 }
 
+double* multiplication_matrix_on_vector(double** MatrixA, double* VectorB, int Size) {
+	double* VectorC = new double[Size];
+
+	for (int i = 0; i < Size; i++) {
+		VectorC[i] = 0;
+		for (int j = 0; j < Size; j++) {
+			VectorC[i] += MatrixA[i][j] * VectorB[j];
+		}
+	}
+	return VectorC;
+}
+
+double** multiplication_column_on_row(double* VectorA, double* VectorB, int Size) {
+	double** MatrixC = new double*[Size];
+	for (int i = 0; i < Size; i++) 
+		MatrixC[i] = new double[Size];
+
+	for (int i = 0; i < Size; i++) {
+		for (int j = 0; j < Size; j++) {
+			MatrixC[i][j] = VectorA[i] * VectorB[j];
+		}
+	}
+	return MatrixC;
+}
+
+double** row_house(double** A, double* v, int n) {
+	double norm = Norma(v, n);
+	double beta = -2 / norm;
+	double** At = Transpose_(A, n);
+	double* w = multiplication_matrix_on_vector(At, v, n);
+	for (int i = 0; i < n; i++)
+		w[i] *= beta;
+	double** v_wt = multiplication_column_on_row(v, w, n);
+
+	double** A_ = new double*[n];
+	for (int i = 0; i < n; i++) {
+		A_[i] = new double[n];
+		for (int j = 0; j < n; j++) {
+			A_[i][j] = A[i][j] + v_wt[i][j];
+		}
+	}
+	return A_;
+}
+
 
 void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 	double** E = new double*[n];
@@ -249,22 +307,27 @@ void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 
 		}
 		double norm = Norma(v, n);
-		Normirovka(v, n, norm);
+		//Normirovka(v, n, norm);
+
+		// variant from GolubVanLoun
+		A_ = row_house(A_, v, n);
+
 		// add v to P matrix as a column
 		for (int i = 0; i < n; i++) {
-			P[i][k] = v[i];
+			P[i][k] = v[i] / sqrt(norm);
 		}
 
-		double** V = CreateMatrix_V(v, n);
-		double** P_current = new double*[n];
-		for (int i = 0; i < n; i++) {
-			P_current[i] = new double[n];
-			for (int j = 0; j < n; j++) {
-				double val = E[i][j] - V[i][j] * 2;
-				P_current[i][j] = val;
-			}
-		}
-		A_ = multiplication(P_current, A_, n);
+		//double** V = CreateMatrix_V(v, n);
+		//double** P_current = new double*[n];
+		//for (int i = 0; i < n; i++) {
+		//	P_current[i] = new double[n];
+		//	for (int j = 0; j < n; j++) {
+		//		double val = E[i][j] - V[i][j] * 2 / norm;
+		//		P_current[i][j] = val;
+		//	}
+		//}
+		// in lob
+		//A_ = multiplication(P_current, A_, n);
 
 		delete v;
 	}
@@ -272,18 +335,7 @@ void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 	R = A_;
 }
 
-double** Transpose_(double** &MatrixQ, int size) {
-	double** MatrixQ_ = new double*[size];
-	double tmp = 0;
-	for (int i = 0; i < size; i++) {
-		MatrixQ_[i] = new double[size];
-		for (int j = 0; j < size; j++) {
-			MatrixQ_[i][j] = MatrixQ[j][i];
-		}
-	}
 
-	return MatrixQ_;
-}
 
 int main(int argc, char **argv) {
 	int n = atoi(argv[1]);
@@ -313,10 +365,10 @@ int main(int argc, char **argv) {
 	double end = omp_get_wtime();
 	double delta = end - start;
 	// Q = Transpose_(Q, n);
-	std::cout << "Matrix Q:" << std::endl;
-	print_matrix(Q, n);
-	std::cout << "Matrix R:" << std::endl;
-	print_matrix(R, n);
+	//std::cout << "Matrix Q:" << std::endl;
+	//print_matrix(Q, n);
+	//std::cout << "Matrix R:" << std::endl;
+	//print_matrix(R, n);
 
 	check_result(A, Q, R, n);
 	std::cout << "Time for simple version: " << delta << std::endl;
@@ -341,9 +393,9 @@ int main(int argc, char **argv) {
 
 	delta = end - start;
 	cout << "Time for eigen version: " << delta << endl;
-	cout << "Matrix q " << endl << thinQ << endl;
-	cout << "Matrix r " << endl;
-	cout << r << endl;
+	//cout << "Matrix q " << endl << thinQ << endl;
+	//cout << "Matrix r " << endl;
+	//cout << r << endl;
 
 	check_with_eigen_result(Q, R, thinQ, r, n);
 
