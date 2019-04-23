@@ -96,13 +96,14 @@ void check_result(double** &MatrixA, double** &MatrixQ, double** &MatrixR, int s
 	cout << "Check result matrices... " << endl;
 	bool flag_ok = true;
 	cout << "Check matrix R: " << endl;
-	double eps = pow(10, -14); //10 ^ (-14);
+	double eps = pow(10, -10); //10 ^ (-10);
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 			if (i > j)
 				if (abs(MatrixR[i][j]) > eps) {
 					flag_ok = false;
 					//cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= 0" << endl;
+					break;
 				}
 		}
 	}
@@ -152,7 +153,7 @@ void check_with_eigen_result(double** &MatrixQ, double** &MatrixR, Eigen::Matrix
 	cout << "Check result matrices with eigen results... " << endl;
 	bool flag_ok = true;
 	cout << "Check matrix R: " << endl;
-	double eps = pow(10, -14); //10 ^ (-14);
+	double eps = pow(10, -10); //10 ^ (-10);
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 			if (i < j)
@@ -177,6 +178,7 @@ void check_with_eigen_result(double** &MatrixQ, double** &MatrixR, Eigen::Matrix
 				flag_ok = false;
 				//cout << "Q[" << i << "][" << j << "] = " << MatrixQ[i][j] << "!= Q`["
 				//	<< i << "][" << j << "] = " << MatrixQE(i, j) << endl;
+				break;
 			}
 		}
 	}
@@ -218,6 +220,10 @@ double** calculate_Q_matrix(double** &P, int n, double** &E, double** &A_) {
 			delete P_current[i];
 
 		delete P_current;
+		for (int i = 0; i < n; i++)
+			delete V[i];
+
+		delete V;
 		delete v;
 	}
 	return Q;
@@ -264,6 +270,14 @@ double** row_house(double** A, double* v, int n) {
 			A_[i][j] = A[i][j] + v_wt[i][j];
 		}
 	}
+	for (int i = 0; i < n; i++)
+		delete[] At[i];
+	delete[] At;
+
+	delete[] w;
+	for (int i = 0; i < n; i++)
+		delete[] v_wt[i];
+	delete[] v_wt;
 	return A_;
 }
 
@@ -328,7 +342,8 @@ void QRDecomposition(int n, double** A_, double** &Q, double** &R) {
 		//}
 		// in lob
 		//A_ = multiplication(P_current, A_, n);
-
+		if (n >= 100 && k % 10 == 0)
+			cout << "..." << endl;
 		delete v;
 	}
 	Q = calculate_Q_matrix(P, n, E, A_);
@@ -370,6 +385,7 @@ int main(int argc, char **argv) {
 	//std::cout << "Matrix R:" << std::endl;
 	//print_matrix(R, n);
 
+	cout << "Done QR decomposition" << endl;
 	check_result(A, Q, R, n);
 	std::cout << "Time for simple version: " << delta << std::endl;
 
