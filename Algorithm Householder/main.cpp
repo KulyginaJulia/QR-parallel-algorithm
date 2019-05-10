@@ -5,18 +5,19 @@
 #include "include/QRAlgorithm.h"
 
 using namespace std;
+using namespace QR;
 //using namespace Eigen;
 
-void print_matrix(double** &MatrixA, int Size) {
-	for (int i = 0; i < Size; i++) {
-		for (int j = 0; j < Size; j++) {
-			//cout << fixed;
-			//cout.precision(6);
-			cout << MatrixA[i][j] << ' ';
-		}
-		cout << endl;
-	}
-}
+//void print_matrix(double** MatrixA, int Size) {
+//	for (int i = 0; i < Size; i++) {
+//		for (int j = 0; j < Size; j++) {
+//			//cout << fixed;
+//			//cout.precision(6);
+//			cout << MatrixA[i][j] << ' ';
+//		}
+//		cout << endl;
+//	}
+//}
 
 double** multiplication(double** MatrixA, double** MatrixB, int Size) {
 	double** MatrixC = new double*[Size];
@@ -73,28 +74,28 @@ void check_with_eigen_result(double** MatrixQ, double** MatrixR, Eigen::MatrixXd
 		cout << "  ERR" << endl;
 	cout << "Done." << endl;
 
-	cout << "Check A = Q*R: " << endl;
-	//double** tmp_matrix = multiplication(Q, R);
+	//cout << "Check A = Q*R: " << endl;
+	//double** tmp_matrix = QR::multiplication(MatrixQ, MatrixR, size);
+	//auto MatrixQERE = MatrixQE * MatrixRE;
 	//// checking norma(A-QR)?
-	//double** MatrixA_QR = new double*[n];
-	//for (int i = 0; i < n; i++) {
-	//	MatrixA_QR[i] = new double[n];
-	//	for (int j = 0; j < n; j++) {
-	//		MatrixA_QR[i][j] = A[i][j] - tmp_matrix[i][j];
+	//double** MatrixQR_QERE = new double*[size];
+	//for (int i = 0; i < size; i++) {
+	//	MatrixQR_QERE[i] = new double[size];
+	//	for (int j = 0; j < size; j++) {
+	//		MatrixQR_QERE[i][j] = MatrixQERE(i, j) - tmp_matrix[i][j];
 	//	}
 	//}
-	////cout << "Matrix A-QR" << endl;
-	////print_matrix(MatrixA_QR, size);
-	//double *vector_column = new double[n];
 
-	//for (int i = 0; i < n; i++)
+	//double *vector_column = new double[size];
+
+	//for (int i = 0; i < size; i++)
 	//{
 	//	vector_column[i] = 0;
-	//	for (int j = 0; j < n; j++)
-	//		vector_column[i] += abs(MatrixA_QR[i][j]);
+	//	for (int j = 0; j < size; j++)
+	//		vector_column[i] += abs(MatrixQR_QERE[i][j]);
 	//}
 	//double max_abs = vector_column[0];
-	//for (int i = 0; i < n; i++)
+	//for (int i = 0; i < size; i++)
 	//{
 	//	//cout << "vector_column = " << vector_column[i] << endl;
 	//	if (vector_column[i] > max_abs)
@@ -117,31 +118,45 @@ int main() {
 	cout << "Please enter size of matrix: ";
 	cin >> n;
 	cout << endl;
-
+	//mode = 3;
+	//n = 4;
 	cout.scientific;
 	QRAlgorithm *qrAlgo;
-	//PrimitiveQR qrAlgo = PrimitiveQR(n);
+	PrimitiveQR *primitiveQR = new PrimitiveQR(n);
+	MultiplicationQR *multiplicationQR = new MultiplicationQR(n);
+	RowHouseQR *rowHouseQR = new RowHouseQR(n);
+
 	switch (mode) {
 	case 0:
 	{
-		qrAlgo = new PrimitiveQR(n);
-		qrAlgo->A[0][0] = 1;	    qrAlgo->A[0][1] = -2;	qrAlgo->A[0][2] = 1;
+		//qrAlgo = new MultiplicationQR(n);
+		qrAlgo = multiplicationQR;
+		qrAlgo->A[0][0] = 1;	qrAlgo->A[0][1] = -2;	qrAlgo->A[0][2] = 1;
 		qrAlgo->A[1][0] = 2; 	qrAlgo->A[1][1] = -1; 	qrAlgo->A[1][2] = 3;
 		qrAlgo->A[2][0] = 2; 	qrAlgo->A[2][1] = 3; 	qrAlgo->A[2][2] = -4;
 		break;
 	}
 	case 1: {
-		qrAlgo = new PrimitiveQR(n);
+		//qrAlgo = new PrimitiveQR(n);
+		qrAlgo = primitiveQR;
 		qrAlgo->generator();
 		break;
 	}
 	case 2:
 	{
-		qrAlgo = new RowHouseQR(n);
+		//qrAlgo = new RowHouseQR(n);
+		qrAlgo = rowHouseQR;
 		qrAlgo->generator();
 		break;
 	}
-	case 3:
+	case 3: 
+	{
+		//qrAlgo = new MultiplicationQR(n);
+		qrAlgo = multiplicationQR;
+		qrAlgo->generator();
+		break;
+	}
+	default:
 		break;
 
 	}
@@ -153,10 +168,8 @@ int main() {
 
 	double end_decomp = omp_get_wtime();
 	double delta_decomp = end_decomp - start_decomp;
-	//std::cout << "Matrix Q:" << std::endl;
-	//print_matrix(Q, n);
-	//std::cout << "Matrix R:" << std::endl;
-	//print_matrix(R, n);
+
+
 
 	cout << "Done QR decomposition" << endl;
 	std::cout << "Time for simple version of decomposition: " << delta_decomp << std::endl;
@@ -168,6 +181,11 @@ int main() {
 	double delta_q = end_q - start_q;
 	std::cout << "Time for simple version of Q: " << delta_q << std::endl;
 
+	//std::cout << "Matrix Q:" << std::endl;
+	//print_matrix(qrAlgo->get_Q(), n);
+
+	//std::cout << "Matrix R:" << std::endl;
+	//print_matrix(qrAlgo->get_R(), n);
 	qrAlgo->check_result();
 
 	Eigen::MatrixXd m(n, n);
@@ -198,6 +216,6 @@ int main() {
 	//cout << r << endl;
 
 	check_with_eigen_result(qrAlgo->get_Q(), qrAlgo->get_R(), thinQ, r, n);
-	// точность eigen
+	// точность eigen в L2
 	return 0;
 }

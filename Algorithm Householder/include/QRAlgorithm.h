@@ -1,14 +1,15 @@
 #pragma once
+namespace QR {
 
-
-
+	void print_matrix(double** MatrixA, int Size);
+	double** multiplication(double** MatrixA, double** MatrixB, int n);
 class QRAlgorithm {
 protected:
 	int n;
 	double** Q, **R;
 	double** P; // matrix of v vectors;
-	double Norma(double* x);
-	double** multiplication(double** MatrixA, double** MatrixB);
+	double Norma(double* x, int size);
+
 	void copy_matrix(double** &destiny, double** &source);
 	double** CreateMatrix_V(double* v);
 public:
@@ -25,20 +26,23 @@ public:
 class PrimitiveQR : public QRAlgorithm{
 public:
 	PrimitiveQR(int _n) : QRAlgorithm(_n){};
-	void QRDecomposition();
-	void QSelector();
+	virtual void QRDecomposition();
+	virtual void QSelector();
 };
 
 class RowHouseQR : public PrimitiveQR {
 protected:
-	double** row_house(double** _A, double* v);
+	double** row_house(double** _A, double* v, int size);
 public:
 	RowHouseQR(int _n) : PrimitiveQR(_n) {};
-	void QRDecomposition();
+	virtual void QRDecomposition();
 };
-//
-//class MultiplicationQR : QRAlgorithm {
-//public:
-//	void QRDecomposition();
-//	void QSelector();
-//};
+
+class MultiplicationQR : public RowHouseQR {
+public:
+	MultiplicationQR(int _n) : RowHouseQR(_n) {};
+	//void QRDecomposition();
+	virtual void QSelector() override;
+};
+
+}
