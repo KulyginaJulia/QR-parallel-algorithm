@@ -2,7 +2,7 @@
 namespace QR {
 
 	void print_matrix(double** MatrixA, int Size);
-	double** multiplication(double** MatrixA, double** MatrixB, int n);
+	void multiplication(double** MatrixA, double** MatrixB, double** &MatrixC, int n);
 class QRAlgorithm {
 protected:
 	int n;
@@ -32,7 +32,7 @@ public:
 
 class RowHouseQR : public PrimitiveQR {
 protected:
-	double** row_house(double** _A, double* v, int size);
+	void row_house(double**& _A, double* v, int size);
 public:
 	RowHouseQR(int _n) : PrimitiveQR(_n) {};
 	virtual void QRDecomposition();

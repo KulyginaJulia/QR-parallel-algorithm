@@ -8,33 +8,6 @@ using namespace std;
 using namespace QR;
 //using namespace Eigen;
 
-//void print_matrix(double** MatrixA, int Size) {
-//	for (int i = 0; i < Size; i++) {
-//		for (int j = 0; j < Size; j++) {
-//			//cout << fixed;
-//			//cout.precision(6);
-//			cout << MatrixA[i][j] << ' ';
-//		}
-//		cout << endl;
-//	}
-//}
-
-double** multiplication(double** MatrixA, double** MatrixB, int Size) {
-	double** MatrixC = new double*[Size];
-	for (int i = 0; i < Size; i++)
-		MatrixC[i] = new double[Size];
-
-	for (int i = 0; i < Size; i++) {
-		for (int j = 0; j < Size; j++) {
-			MatrixC[i][j] = 0;
-			for (int k = 0; k < Size; k++) {
-				MatrixC[i][j] += MatrixA[i][k] * MatrixB[k][j];
-			}
-		}
-	}
-	return MatrixC;
-}
-
 void check_with_eigen_result(double** MatrixQ, double** MatrixR, Eigen::MatrixXd MatrixQE, Eigen::MatrixXd MatrixRE, int size) {
 	cout << "Check result matrices with eigen results... " << endl;
 	bool flag_ok = true;
@@ -73,42 +46,7 @@ void check_with_eigen_result(double** MatrixQ, double** MatrixR, Eigen::MatrixXd
 	else
 		cout << "  ERR" << endl;
 	cout << "Done." << endl;
-
-	//cout << "Check A = Q*R: " << endl;
-	//double** tmp_matrix = QR::multiplication(MatrixQ, MatrixR, size);
-	//auto MatrixQERE = MatrixQE * MatrixRE;
-	//// checking norma(A-QR)?
-	//double** MatrixQR_QERE = new double*[size];
-	//for (int i = 0; i < size; i++) {
-	//	MatrixQR_QERE[i] = new double[size];
-	//	for (int j = 0; j < size; j++) {
-	//		MatrixQR_QERE[i][j] = MatrixQERE(i, j) - tmp_matrix[i][j];
-	//	}
-	//}
-
-	//double *vector_column = new double[size];
-
-	//for (int i = 0; i < size; i++)
-	//{
-	//	vector_column[i] = 0;
-	//	for (int j = 0; j < size; j++)
-	//		vector_column[i] += abs(MatrixQR_QERE[i][j]);
-	//}
-	//double max_abs = vector_column[0];
-	//for (int i = 0; i < size; i++)
-	//{
-	//	//cout << "vector_column = " << vector_column[i] << endl;
-	//	if (vector_column[i] > max_abs)
-	//		max_abs = vector_column[i];
-	//}
-	//cout << "max abs = " << max_abs << endl;
-	//if (max_abs < eps)
-	//	cout << "  OK" << endl;
-	//else
-	//	cout << "  ERR" << endl;
 }
-
-
 
 int main() {
 	cout << "Please choose mode: 0 - Test mode with definitly 3x3 matrix, 1 - primitive version, 2 - rowHouse version, 3 - multipilication version" << endl;
@@ -119,7 +57,7 @@ int main() {
 	cin >> n;
 	cout << endl;
 	//mode = 3;
-	//n = 4;
+	//n = 1000;
 	cout.scientific;
 	QRAlgorithm *qrAlgo;
 	PrimitiveQR *primitiveQR = new PrimitiveQR(n);
@@ -161,7 +99,6 @@ int main() {
 
 	}
 
-
 	double start_decomp = omp_get_wtime();
 
 	qrAlgo->QRDecomposition();
@@ -186,6 +123,7 @@ int main() {
 
 	//std::cout << "Matrix R:" << std::endl;
 	//print_matrix(qrAlgo->get_R(), n);
+
 	qrAlgo->check_result();
 
 	Eigen::MatrixXd m(n, n);
