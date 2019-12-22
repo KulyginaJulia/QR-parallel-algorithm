@@ -130,25 +130,11 @@ void QRAlgorithm::check_result() {
 }
 
 void PrimitiveQR::QRDecomposition() {
-	double** E = new double*[n];
-	//double** A_ = new double*[n];
-
-	// initialize E
-	for (int i = 0; i < n; i++) {
-		E[i] = new double[n];
-		//A_[i] = new double[n];
-		for (int j = 0; j < n; j++) {
-			if (i == j)
-				E[i][j] = 1;
-			else
-				E[i][j] = 0;
-		}
-	}
-	copy_matrix(R, A);
+	copy_matrix(R, A);	
+	double* v = new double[n];
+	double* x = new double[n]; //столбец матрицы
 	for (int k = 0; k < n - 1; k++) {
 		// cout << "Step " << k << endl;
-		double* v = new double[n];
-		double* x = new double[n]; //столбец матрицы
 		for (int j = 0; j < n; j++) {
 			if (j < k)
 				x[j] = 0;
@@ -162,7 +148,7 @@ void PrimitiveQR::QRDecomposition() {
 				v[i] = 0;
 			}
 			else {
-				v[i] = R[i][k] + signum * norma_x * E[i][k];
+				v[i] = R[i][k] + (i == k ? signum * norma_x : 0); 
 			}
 
 		}
@@ -180,7 +166,7 @@ void PrimitiveQR::QRDecomposition() {
 			P_current[i] = new double[n];
 			tmpMatrix[i] = new double[n];
 			for (int j = 0; j < n; j++) {
-				double val = E[i][j] - V[i][j] * 2 / norm;
+				double val = (i == j ? 1 : 0) - V[i][j] * 2 / norm;
 				P_current[i][j] = val;
 			}
 		}
@@ -196,29 +182,16 @@ void PrimitiveQR::QRDecomposition() {
 		}
 		delete V;
 		delete P_current;
-		delete v;
 		delete tmpMatrix;
 	}
-	//R = A_;
+	delete v;
+	delete x;
 }
 
-void PrimitiveQR::QSelector() {
-	double** E = new double*[n];
-	for (int i = 0; i < n; i++) {
-		E[i] = new double[n];
-	}
-	// initialize E
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			if (i == j)
-				E[i][j] = 1;
-			else
-				E[i][j] = 0;
-		}
-	}
+void PrimitiveQR::QSelector() {	
+	double* v = new double[n];
 
 	for (int k = n - 2; k >= 0; k--) {
-		double* v = new double[n];
 		for (int i = 0; i < n; i++) {
 			v[i] = P[i][k];
 		}
@@ -230,7 +203,7 @@ void PrimitiveQR::QSelector() {
 			P_current[i] = new double[n];
 			tmpMatrix[i] = new double[n];
 			for (int j = 0; j < n; j++) {
-				double val = E[i][j] - V[i][j] * 2;
+				double val = (i == j ? 1 : 0) - V[i][j] * 2;
 				P_current[i][j] = val;
 			}
 		}
@@ -253,8 +226,8 @@ void PrimitiveQR::QSelector() {
 
 		delete P_current;
 		delete V;
-		delete v;
 	}
+	delete v;
 }
 
 double* multiplication_matrix_on_vector(double** MatrixA, double* VectorB, int Size) {
@@ -282,22 +255,22 @@ double** multiplication_column_on_row(double* VectorA, double* VectorB, int Size
 	return MatrixC;
 }
 
-void RowHouseQR::row_house(double**& _A, double* v, int size) {
+void RowHouseQR::row_house(double**& _A, double* v, int size, int k) {
 	double norm = Norma(v, size);
 	double beta = -2 / norm;
 
 	double* w = new double[size];
 	
-	for (int i = 0; i < size; i++) {
+	for (int i = k; i < size; i++) {
 		w[i] = 0;
-		for (int j = 0; j < size; j++) {
+		for (int j = k; j < size; j++) {
 			w[i] += _A[j][i] * v[j];
 		}
 		w[i] *= beta;
 	}
 
-	for (int i = 0; i < size; i++) {
-		for (int j = 0; j < size; j++) {
+	for (int i = k; i < size; i++) {
+		for (int j = k; j < size; j++) {
 			_A[i][j] = _A[i][j] + v[i] * w[j];
 		}
 	}
@@ -305,6 +278,17 @@ void RowHouseQR::row_house(double**& _A, double* v, int size) {
 	delete[] w;
 }
 
+
+void QR::print_matrix(double** MatrixA, int Size) {
+	for (int i = 0; i < Size; i++) {
+		for (int j = 0; j < Size; j++) {
+			//cout << fixed;
+			//cout.precision(6);
+			cout << MatrixA[i][j] << ' ';
+		}
+		cout << endl;
+	}
+}
 void RowHouseQR::QRDecomposition() {
 	double** E = new double*[n];
 
@@ -344,7 +328,7 @@ void RowHouseQR::QRDecomposition() {
 		double norm = Norma(v, n);
 
 		// variant from GolubVanLoun
-		row_house(R, v, n);
+		row_house(R, v, n, 0);
 
 		// add v to P matrix as a column
 		for (int i = 0; i < n; i++) {
@@ -361,18 +345,6 @@ void RowHouseQR::QRDecomposition() {
 	}
 	delete E;
 }
-
-void QR::print_matrix(double** MatrixA, int Size) {
-	for (int i = 0; i < Size; i++) {
-		for (int j = 0; j < Size; j++) {
-			//cout << fixed;
-			//cout.precision(6);
-			cout << MatrixA[i][j] << ' ';
-		}
-		cout << endl;
-	}
-}
-
 
 void MultiplicationQR::QSelector() {
 	double** E = new double*[n];
@@ -393,15 +365,15 @@ void MultiplicationQR::QSelector() {
 		double* v = new double[n];
 		//cout << "Step = " << k << endl << endl;
 		for (int i = 0; i < n; i++) {
-			v[i] = P[i][k];	
+			v[i] = P[i][k];
 		}
 		int r = n - k;
 
 		double** Q_small = new double*[r];
-		for (int i = r-1; i >= 0; i--) {
+		for (int i = r - 1; i >= 0; i--) {
 			Q_small[i] = new double[r];
-			for (int j = r-1; j >= 0; j--)
-				Q_small[i][j] = Q[i+k][j+k];
+			for (int j = r - 1; j >= 0; j--)
+				Q_small[i][j] = Q[i + k][j + k];
 		}
 		double* v_small = new double[r];
 
@@ -409,10 +381,10 @@ void MultiplicationQR::QSelector() {
 			v_small[i] = v[i + k];
 		}
 
-	    row_house(Q_small, v_small, r);
+		row_house(Q_small, v_small, r, 0);
 
-		for (int i = r-1; i >= 0; i--) {
-			for (int j = r-1; j >= 0; j--)
+		for (int i = r - 1; i >= 0; i--) {
+			for (int j = r - 1; j >= 0; j--)
 				Q[i + k][j + k] = Q_small[i][j];
 		}
 
@@ -425,4 +397,65 @@ void MultiplicationQR::QSelector() {
 			delete[] Q_small[i];
 		delete Q_small;
 	}
+}
+void FinalSequenceQR::QRDecomposition() {
+	copy_matrix(R, A);
+	double* v = new double[n];
+	double* x = new double[n]; //столбец матрицы
+	for (int k = 0; k < n - 1; k++) {
+		for (int j = 0; j < n; j++) {
+			if (j < k)
+				x[j] = 0;
+			else
+				x[j] = R[j][k];
+		}
+		double norma_x = sqrt(Norma(x, n));
+		for (int i = 0; i < n; i++) {
+			int signum = R[k][k] > 0 ? 1 : -1;
+			if (i < k) {
+				v[i] = 0;
+			}
+			else {
+				v[i] = R[i][k] + (i == k ? signum * norma_x : 0);
+			}
+		}
+		double norm = Norma(v, n);
+
+		// variant from GolubVanLoun
+		row_house(R, v, n, 0);
+
+		// add v to P matrix as a column
+		for (int i = 0; i < n; i++) {
+			P[i][k] = v[i] / sqrt(norm);
+		}
+
+		//if (n >= 100 && k % 10 == 0)
+		//	cout << "... k = " << k << endl;
+	}
+	delete v;
+	delete x;
+}
+
+void FinalSequenceQR::QSelector() {
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			Q[i][j] = i == j ? 1 : 0;
+		}
+	}
+	double* v = new double[n];
+	for (int k = n - 2; k >= 0; k--) {
+		//cout << "Step = " << k << endl << endl;
+		for (int i = 0; i < n; i++) {
+			v[i] = P[i][k];	
+		}
+		int r = n - k;
+
+	    row_house(Q, v, n, k);
+
+		//if (n >= 100 && k % 10 == 0)
+		//	cout << "... k = " << k << endl;
+
+	}
+	//clear
+	delete v;
 }

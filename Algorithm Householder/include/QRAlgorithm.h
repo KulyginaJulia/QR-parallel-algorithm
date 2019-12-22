@@ -32,7 +32,7 @@ public:
 
 class RowHouseQR : public PrimitiveQR {
 protected:
-	void row_house(double**& _A, double* v, int size);
+	void row_house(double**& _A, double* v, int size, int k);
 public:
 	RowHouseQR(int _n) : PrimitiveQR(_n) {};
 	virtual void QRDecomposition();
@@ -43,6 +43,13 @@ public:
 	MultiplicationQR(int _n) : RowHouseQR(_n) {};
 	//void QRDecomposition();
 	virtual void QSelector() override;
+};
+
+class FinalSequenceQR : public RowHouseQR {
+public:
+	FinalSequenceQR(int _n) : RowHouseQR(_n) {};
+	void QRDecomposition();
+    void QSelector() override;
 };
 
 }
