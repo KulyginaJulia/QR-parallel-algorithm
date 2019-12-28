@@ -8,7 +8,7 @@ using namespace std;
 using namespace QR;
 //using namespace Eigen;
 
-void check_with_eigen_result(double** MatrixQ, double** MatrixR, Eigen::MatrixXd MatrixQE, Eigen::MatrixXd MatrixRE, int size) {
+void check_with_eigen_result(double* MatrixQ, double* MatrixR, Eigen::MatrixXd MatrixQE, Eigen::MatrixXd MatrixRE, int size) {
 	cout << "Check result matrices with eigen results... " << endl;
 	bool flag_ok = true;
 	cout << "Check matrix R: " << endl;
@@ -16,7 +16,7 @@ void check_with_eigen_result(double** MatrixQ, double** MatrixR, Eigen::MatrixXd
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 			if (i < j)
-				if (abs(MatrixR[i][j] - MatrixRE(i, j)) > eps) {
+				if (abs(MatrixR[i* size + j] - MatrixRE(i, j)) > eps) {
 					flag_ok = false;
 					//cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= R`["
 					//	<< i << "][" << j << "] = " << MatrixRE(i, j) << endl;
@@ -33,7 +33,7 @@ void check_with_eigen_result(double** MatrixQ, double** MatrixR, Eigen::MatrixXd
 	cout << "Check Q: " << endl;
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
-			if (abs(MatrixQ[i][j] - MatrixQE(i, j)) > eps) {
+			if (abs(MatrixQ[i* size + j] - MatrixQE(i, j)) > eps) {
 				flag_ok = false;
 				//cout << "Q[" << i << "][" << j << "] = " << MatrixQ[i][j] << "!= Q`["
 				//	<< i << "][" << j << "] = " << MatrixQE(i, j) << endl;
@@ -49,29 +49,30 @@ void check_with_eigen_result(double** MatrixQ, double** MatrixR, Eigen::MatrixXd
 }
 
 int main() {
-	cout << "Please choose mode: 0 - Test mode with definitly 3x3 matrix, 1 - primitive version, 2 - rowHouse version, 3 - multipilication version" << endl;
+	cout << "Please choose mode: 0 - Test mode with definitly 3x3 matrix, 1 - primitive version, 2 - rowHouse version, 3 - multipilication version, 4 - final sequence version" << endl;
 
 	int n, mode;
 	cin >> mode;
 	cout << "Please enter size of matrix: ";
 	cin >> n;
 	cout << endl;
-	//mode = 3;
-	//n = 1000;
+	//mode = 0;
+	//n = 3;
 	cout.scientific;
 	QRAlgorithm *qrAlgo;
 	PrimitiveQR *primitiveQR = new PrimitiveQR(n);
 	MultiplicationQR *multiplicationQR = new MultiplicationQR(n);
 	RowHouseQR *rowHouseQR = new RowHouseQR(n);
+	FinalSequenceQR *finalSequenceQR = new FinalSequenceQR(n);
 
 	switch (mode) {
 	case 0:
 	{
 		//qrAlgo = new MultiplicationQR(n);
 		qrAlgo = multiplicationQR;
-		qrAlgo->A[0][0] = 1;	qrAlgo->A[0][1] = -2;	qrAlgo->A[0][2] = 1;
-		qrAlgo->A[1][0] = 2; 	qrAlgo->A[1][1] = -1; 	qrAlgo->A[1][2] = 3;
-		qrAlgo->A[2][0] = 2; 	qrAlgo->A[2][1] = 3; 	qrAlgo->A[2][2] = -4;
+		qrAlgo->A[0] = 1;	qrAlgo->A[1] = -2;	qrAlgo->A[2] = 1;
+		qrAlgo->A[3] = 2; 	qrAlgo->A[4] = -1; 	qrAlgo->A[5] = 3;
+		qrAlgo->A[6] = 2; 	qrAlgo->A[7] = 3; 	qrAlgo->A[8] = -4;
 		break;
 	}
 	case 1: {
@@ -91,6 +92,12 @@ int main() {
 	{
 		//qrAlgo = new MultiplicationQR(n);
 		qrAlgo = multiplicationQR;
+		qrAlgo->generator();
+		break;
+	}
+	case 4:
+	{
+		qrAlgo = finalSequenceQR;
 		qrAlgo->generator();
 		break;
 	}
@@ -129,7 +136,7 @@ int main() {
 	Eigen::MatrixXd m(n, n);
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++)
-			m(i, j) = qrAlgo->A[i][j];
+			m(i, j) = qrAlgo->A[i*n + j];
 	}
 	auto qr = m.householderQr(); // casted type Matrix -> Householder matrix
 

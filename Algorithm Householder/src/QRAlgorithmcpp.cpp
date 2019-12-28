@@ -7,22 +7,22 @@ using namespace QR;
 
 QRAlgorithm::QRAlgorithm(int _n) {
 	n = _n;
-	A = new double*[n];
-	Q = new double*[n];
-	R = new double*[n];
-	P = new double*[n]; // matrix of the v vectors
-	for (int i = 0; i < n; i++) {
-		A[i] = new double[n];
-		Q[i] = new double[n];
-		R[i] = new double[n];
-		P[i] = new double[n];
-	}
+	A = new double[n * n];
+	Q = new double[n * n];
+	R = new double[n * n];
+	P = new double[n * n]; // matrix of the v vectors
+	//for (int i = 0; i < n; i++) {
+	//	A[i] = new double[n];
+	//	Q[i] = new double[n];
+	//	R[i] = new double[n];
+	//	P[i] = new double[n];
+	//}
 }
 
 void QRAlgorithm::generator() {
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			A[i][j] = rand() % 100;
+			A[i*n + j] = rand() % 100;
 		}
 	}
 }
@@ -34,32 +34,30 @@ double QRAlgorithm::Norma(double* x, int size) {
 	return sum;
 }
 
-void QR::multiplication(double** MatrixA, double** MatrixB, double** &MatrixC, int n) {
+void QR::multiplication(double* MatrixA, double* MatrixB, double* &MatrixC, int n) {
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			MatrixC[i][j] = 0;
+			MatrixC[i*n + j] = 0;
 			for (int k = 0; k < n; k++) {
-				MatrixC[i][j] += MatrixA[i][k] * MatrixB[k][j];
+				MatrixC[i * n + j] += MatrixA[i * n + k] * MatrixB[k * n + j];
 			}
 		}
 	}
 }
 
-void QRAlgorithm::copy_matrix(double** &destiny, double** &source) {
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			destiny[i][j] = source[i][j];
-		}
+void QRAlgorithm::copy_matrix(double* &destiny, double* &source) {
+	for (int i = 0; i < n*n; i++) {
+		destiny[i] = source[i];
 	}
 }
 
-double** QRAlgorithm::CreateMatrix_V(double* v) {
-	double** V = new double*[n];
+double* QRAlgorithm::CreateMatrix_V(double* v) {
+	double* V = new double[n * n];
 	for (int i = 0; i < n; i++) {
-		V[i] = new double[n];
+		//V[i] = new double[n];
 		for (int j = 0; j < n; j++) {
 			double val = v[i] * v[j];
-			V[i][j] = val;
+			V[i* n + j] = val;
 		}
 	}
 
@@ -74,7 +72,7 @@ void QRAlgorithm::check_result() {
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			if (i > j) {
-				if (abs(R[i][j]) > eps) {
+				if (abs(R[i * n + j]) > eps) {
 					flag_ok = false;
 					//cout << "R[" << i << "][" << j << "] = " << MatrixR[i][j] << "!= 0" << endl;
 					break;
@@ -90,10 +88,10 @@ void QRAlgorithm::check_result() {
 	flag_ok = true;
 
 	cout << "Check A = Q*R: " << endl;
-	double** tmp_matrix = new double*[n];
-	for (int i = 0; i < n; i++) {
-		tmp_matrix[i] = new double[n];
-	}
+	double* tmp_matrix = new double[n * n];
+	//for (int i = 0; i < n; i++) {
+	//	tmp_matrix[i] = new double[n];
+	//}
 
 	multiplication(Q, R, tmp_matrix, n);
 	// checking norma(A-QR)?
@@ -101,7 +99,7 @@ void QRAlgorithm::check_result() {
 	for (int i = 0; i < n; i++) {
 		MatrixA_QR[i] = new double[n];
 		for (int j = 0; j < n; j++) {
-			MatrixA_QR[i][j] = A[i][j] - tmp_matrix[i][j];
+			MatrixA_QR[i][j] = A[i * n + j] - tmp_matrix[i * n + j];
 		}
 	}
 	//cout << "Matrix A-QR" << endl;
@@ -139,16 +137,16 @@ void PrimitiveQR::QRDecomposition() {
 			if (j < k)
 				x[j] = 0;
 			else
-				x[j] = R[j][k];
+				x[j] = R[j * n + k];
 		}
 		double norma_x = sqrt(Norma(x, n));
 		for (int i = 0; i < n; i++) {
-			int signum = R[k][k] > 0 ? 1 : -1;
+			int signum = R[k * n + k] > 0 ? 1 : -1;
 			if (i < k) {
 				v[i] = 0;
 			}
 			else {
-				v[i] = R[i][k] + (i == k ? signum * norma_x : 0); 
+				v[i] = R[i * n + k] + (i == k ? signum * norma_x : 0); 
 			}
 
 		}
@@ -156,18 +154,18 @@ void PrimitiveQR::QRDecomposition() {
 
 		// add v to P matrix as a column
 		for (int i = 0; i < n; i++) {
-			P[i][k] = v[i] / sqrt(norm);
+			P[i * n + k] = v[i] / sqrt(norm);
 		}
 
-		double** V = CreateMatrix_V(v);
-		double** P_current = new double*[n];
-		double** tmpMatrix = new double*[n];
+		double* V = CreateMatrix_V(v);
+		double* P_current = new double[n * n];
+		double* tmpMatrix = new double[n * n];
 		for (int i = 0; i < n; i++) {
-			P_current[i] = new double[n];
-			tmpMatrix[i] = new double[n];
+			//P_current[i] = new double[n];
+			//tmpMatrix[i] = new double[n];
 			for (int j = 0; j < n; j++) {
-				double val = (i == j ? 1 : 0) - V[i][j] * 2 / norm;
-				P_current[i][j] = val;
+				double val = (i == j ? 1 : 0) - V[i * n + j] * 2 / norm;
+				P_current[i * n + j] = val;
 			}
 		}
 
@@ -175,11 +173,11 @@ void PrimitiveQR::QRDecomposition() {
 		//if (n >= 100 && k % 10 == 0)
 		//	cout << "... k = " << k << endl;
 		copy_matrix(R, tmpMatrix);
-		for (int i = 0; i < n; i++) {
-			delete P_current[i];
-			delete V[i];
-			delete tmpMatrix[i];
-		}
+		//for (int i = 0; i < n; i++) {
+		//	delete P_current[i];
+		//	delete V[i];
+		//	delete tmpMatrix[i];
+		//}
 		delete V;
 		delete P_current;
 		delete tmpMatrix;
@@ -193,18 +191,18 @@ void PrimitiveQR::QSelector() {
 
 	for (int k = n - 2; k >= 0; k--) {
 		for (int i = 0; i < n; i++) {
-			v[i] = P[i][k];
+			v[i] = P[i * n + k];
 		}
 
-		double** V = CreateMatrix_V(v);
-		double** P_current = new double*[n];
-		double** tmpMatrix = new double*[n];
+		double* V = CreateMatrix_V(v);
+		double* P_current = new double[n * n];
+		double* tmpMatrix = new double[n * n];
 		for (int i = 0; i < n; i++) {
-			P_current[i] = new double[n];
-			tmpMatrix[i] = new double[n];
+			//P_current[i] = new double[n];
+			//tmpMatrix[i] = new double[n];
 			for (int j = 0; j < n; j++) {
-				double val = (i == j ? 1 : 0) - V[i][j] * 2;
-				P_current[i][j] = val;
+				double val = (i == j ? 1 : 0) - V[i* n +j] * 2;
+				P_current[i* n + j] = val;
 			}
 		}
 
@@ -218,11 +216,11 @@ void PrimitiveQR::QSelector() {
 		//if (n >= 100 && k % 10 == 0)
 		//	cout << "... k = " << k << endl;
 		// clear
-		for (int i = 0; i < n; i++) {
-			delete V[i];
-			delete P_current[i];
-			delete tmpMatrix[i];
-		}
+		//for (int i = 0; i < n; i++) {
+		//	delete V[i];
+		//	delete P_current[i];
+		//	delete tmpMatrix[i];
+		//}
 
 		delete P_current;
 		delete V;
@@ -255,7 +253,7 @@ double** multiplication_column_on_row(double* VectorA, double* VectorB, int Size
 	return MatrixC;
 }
 
-void RowHouseQR::row_house(double**& _A, double* v, int size, int k) {
+void RowHouseQR::row_house(double*& _A, double* v, int size, int k) {
 	double norm = Norma(v, size);
 	double beta = -2 / norm;
 
@@ -264,14 +262,14 @@ void RowHouseQR::row_house(double**& _A, double* v, int size, int k) {
 	for (int i = k; i < size; i++) {
 		w[i] = 0;
 		for (int j = k; j < size; j++) {
-			w[i] += _A[j][i] * v[j];
+			w[i] += _A[j* size + i] * v[j];
 		}
 		w[i] *= beta;
 	}
 
 	for (int i = k; i < size; i++) {
 		for (int j = k; j < size; j++) {
-			_A[i][j] = _A[i][j] + v[i] * w[j];
+			_A[i* size + j] = _A[i* size + j] + v[i] * w[j];
 		}
 	}
 
@@ -279,12 +277,12 @@ void RowHouseQR::row_house(double**& _A, double* v, int size, int k) {
 }
 
 
-void QR::print_matrix(double** MatrixA, int Size) {
+void QR::print_matrix(double* MatrixA, int Size) {
 	for (int i = 0; i < Size; i++) {
 		for (int j = 0; j < Size; j++) {
 			//cout << fixed;
 			//cout.precision(6);
-			cout << MatrixA[i][j] << ' ';
+			cout << MatrixA[i* Size + j] << ' ';
 		}
 		cout << endl;
 	}
@@ -312,16 +310,16 @@ void RowHouseQR::QRDecomposition() {
 			if (j < k)
 				x[j] = 0;
 			else
-				x[j] = R[j][k];
+				x[j] = R[j* n + k];
 		}
 		double norma_x = sqrt(Norma(x, n));
 		for (int i = 0; i < n; i++) {
-			int signum = R[k][k] > 0 ? 1 : -1;
+			int signum = R[k*n + k] > 0 ? 1 : -1;
 			if (i < k) {
 				v[i] = 0;
 			}
 			else {
-				v[i] = R[i][k] + signum * norma_x * E[i][k];
+				v[i] = R[i* n + k] + signum * norma_x * E[i][k];
 			}
 
 		}
@@ -332,7 +330,7 @@ void RowHouseQR::QRDecomposition() {
 
 		// add v to P matrix as a column
 		for (int i = 0; i < n; i++) {
-			P[i][k] = v[i] / sqrt(norm);
+			P[i* n + k] = v[i] / sqrt(norm);
 		}
 
 		//if (n >= 100 && k % 10 == 0)
@@ -347,16 +345,16 @@ void RowHouseQR::QRDecomposition() {
 }
 
 void MultiplicationQR::QSelector() {
-	double** E = new double*[n];
+	double* E = new double[n * n];
 
 	// initialize E
 	for (int i = 0; i < n; i++) {
-		E[i] = new double[n];
+		//E[i] = new double[n];
 		for (int j = 0; j < n; j++) {
 			if (i == j)
-				E[i][j] = 1;
+				E[i* n + j] = 1;
 			else
-				E[i][j] = 0;
+				E[i* n + j] = 0;
 		}
 	}
 	copy_matrix(Q, E);
@@ -365,15 +363,15 @@ void MultiplicationQR::QSelector() {
 		double* v = new double[n];
 		//cout << "Step = " << k << endl << endl;
 		for (int i = 0; i < n; i++) {
-			v[i] = P[i][k];
+			v[i] = P[i* n + k];
 		}
 		int r = n - k;
 
-		double** Q_small = new double*[r];
+		double* Q_small = new double[r * r];
 		for (int i = r - 1; i >= 0; i--) {
-			Q_small[i] = new double[r];
+			//Q_small[i] = new double[r];
 			for (int j = r - 1; j >= 0; j--)
-				Q_small[i][j] = Q[i + k][j + k];
+				Q_small[i* (r) + j] = Q[(i + k) * (n) + (j + k)];
 		}
 		double* v_small = new double[r];
 
@@ -385,7 +383,7 @@ void MultiplicationQR::QSelector() {
 
 		for (int i = r - 1; i >= 0; i--) {
 			for (int j = r - 1; j >= 0; j--)
-				Q[i + k][j + k] = Q_small[i][j];
+				Q[(i + k) * (n) + (j + k)] = Q_small[i* (r) + j];
 		}
 
 		//if (n >= 100 && k % 10 == 0)
@@ -393,8 +391,8 @@ void MultiplicationQR::QSelector() {
 		//clear
 		delete v;
 		delete v_small;
-		for (int i = 0; i < r; i++)
-			delete[] Q_small[i];
+		//for (int i = 0; i < r; i++)
+		//	delete[] Q_small[i];
 		delete Q_small;
 	}
 }
@@ -407,16 +405,16 @@ void FinalSequenceQR::QRDecomposition() {
 			if (j < k)
 				x[j] = 0;
 			else
-				x[j] = R[j][k];
+				x[j] = R[j* n + k];
 		}
 		double norma_x = sqrt(Norma(x, n));
 		for (int i = 0; i < n; i++) {
-			int signum = R[k][k] > 0 ? 1 : -1;
+			int signum = R[k* n + k] > 0 ? 1 : -1;
 			if (i < k) {
 				v[i] = 0;
 			}
 			else {
-				v[i] = R[i][k] + (i == k ? signum * norma_x : 0);
+				v[i] = R[i* n + k] + (i == k ? signum * norma_x : 0);
 			}
 		}
 		double norm = Norma(v, n);
@@ -426,7 +424,7 @@ void FinalSequenceQR::QRDecomposition() {
 
 		// add v to P matrix as a column
 		for (int i = 0; i < n; i++) {
-			P[i][k] = v[i] / sqrt(norm);
+			P[i* n + k] = v[i] / sqrt(norm);
 		}
 
 		//if (n >= 100 && k % 10 == 0)
@@ -439,16 +437,16 @@ void FinalSequenceQR::QRDecomposition() {
 void FinalSequenceQR::QSelector() {
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			Q[i][j] = i == j ? 1 : 0;
+			Q[i* n + j] = i == j ? 1 : 0;
 		}
 	}
 	double* v = new double[n];
 	for (int k = n - 2; k >= 0; k--) {
 		//cout << "Step = " << k << endl << endl;
 		for (int i = 0; i < n; i++) {
-			v[i] = P[i][k];	
+			v[i] = P[i* n + k];	
 		}
-		int r = n - k;
+		//int r = n - k;
 
 	    row_house(Q, v, n, k);
 
