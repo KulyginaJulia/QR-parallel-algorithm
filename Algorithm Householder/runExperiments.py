@@ -31,8 +31,19 @@ def saveExperimentsToExelTable(sheet1, listSizes):
         sheet1.write(i, 0, listSize[i - 2])
 
 
-def saveExperimentForOneMode(listTimeDecompositionForOneMode, listTimeSelectionQForOneMode, listAccuracyForOneMode):
-    a = 1
+def saveExperimentForOneMode(listTimeDecompositionForOneMode, listTimeSelectionQForOneMode, listAccuracyForOneMode, mode):
+    numberOfColumn = (mode - 1) * 3 + 1 # 3 = count or columns
+
+    for i in range(2, len(listTimeDecompositionForOneMode) + 2, 1):
+        sheet1.write(i, numberOfColumn, listTimeDecompositionForOneMode[i - 2])
+
+    numberOfColumn += 1
+    for i in range(2, len(listTimeSelectionQForOneMode) + 2, 1):
+        sheet1.write(i, numberOfColumn, listTimeSelectionQForOneMode[i - 2])
+
+    numberOfColumn += 1
+    for i in range(2, len(listAccuracyForOneMode) + 2, 1):
+        sheet1.write(i, numberOfColumn, listAccuracyForOneMode[i - 2])
 
 def savePng(name='', fmt='png'):
     pwd = os.getcwd()
@@ -59,8 +70,11 @@ if __name__ == "__main__":
     saveExperimentsToExelTable(sheet1, listSize)
 
     for mode in range(1, 5, 1):
+        listTimeDecompositionForOneMode.clear()
+        listTimeSelectionQForOneMode.clear()
+        listAccuracyForOneMode.clear()
         for size in listSize:
-            if mode < 3 and size > 1000:
+            if mode < 3 and size > 300:
                 continue
             print("---------------------------------------------------------------- \n")
             print(f"mode = {mode}; size = {size} \n")
@@ -81,7 +95,7 @@ if __name__ == "__main__":
             print(f"Accuracy = {outputMaxAbs}")
             listAccuracyForOneMode.append(float(outputMaxAbs))
 
-        saveExperimentForOneMode(listTimeDecompositionForOneMode, listTimeSelectionQForOneMode, listAccuracyForOneMode)
+        saveExperimentForOneMode(listTimeDecompositionForOneMode, listTimeSelectionQForOneMode, listAccuracyForOneMode, mode)
 
 
 
