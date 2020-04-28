@@ -73,6 +73,7 @@
     <ClCompile>
       <OpenMPSupport>true</OpenMPSupport>
       <AdditionalIncludeDirectories>C:\Users\Julia\Downloads\eigen-eigen-323c052e1731\eigen-eigen-323c052e1731\</AdditionalIncludeDirectories>
+      <OpenMP>GenerateSequentialCode</OpenMP>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

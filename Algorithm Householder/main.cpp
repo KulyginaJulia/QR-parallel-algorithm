@@ -12,7 +12,7 @@ void check_with_eigen_result(double* MatrixQ, double* MatrixR, Eigen::MatrixXd M
 	cout << "Check result matrices with eigen results... " << endl;
 	bool flag_ok = true;
 	cout << "Check matrix R: " << endl;
-	double eps = pow(10, -10); //10 ^ (-10);
+	double eps = pow(10, -7); //10 ^ (-7);
 	for (int i = 0; i < size; i++) {
 		for (int j = 0; j < size; j++) {
 			if (i < j)
@@ -48,63 +48,86 @@ void check_with_eigen_result(double* MatrixQ, double* MatrixR, Eigen::MatrixXd M
 	cout << "Done." << endl;
 }
 
-int main() {
-	cout << "Please choose mode: 0 - Test mode with definitly 3x3 matrix, 1 - primitive version, 2 - rowHouse version, 3 - multipilication version, 4 - final sequence version" << endl;
+//int main() {
+int main(int argc, char **argv) {
+	//cout << "Please choose mode: 0 - Test mode with definitly 3x3 matrix, 1 - primitive version, 2 - rowHouse version, 3 - multipilication version, 4 - final sequence version" << endl;
 
 	int n, mode;
-	cin >> mode;
-	cout << "Please enter size of matrix: ";
-	cin >> n;
-	cout << endl;
-	//mode = 0;
-	//n = 3;
+	mode = atoi(argv[1]);
+	n = atoi(argv[2]);
+
+	//cin >> mode;
+	//cout << "Please enter size of matrix: ";
+	//cin >> n;
+	//cout << endl;
+
+	//mode = 7;
+	//n = 1000;
 	cout.scientific;
 	QRAlgorithm *qrAlgo;
-	PrimitiveQR *primitiveQR = new PrimitiveQR(n);
-	MultiplicationQR *multiplicationQR = new MultiplicationQR(n);
-	RowHouseQR *rowHouseQR = new RowHouseQR(n);
-	FinalSequenceQR *finalSequenceQR = new FinalSequenceQR(n);
 
 	switch (mode) {
 	case 0:
 	{
-		//qrAlgo = new MultiplicationQR(n);
-		qrAlgo = multiplicationQR;
+		qrAlgo = new FinalSequenceQR(n);
 		qrAlgo->A[0] = 1;	qrAlgo->A[1] = -2;	qrAlgo->A[2] = 1;
 		qrAlgo->A[3] = 2; 	qrAlgo->A[4] = -1; 	qrAlgo->A[5] = 3;
 		qrAlgo->A[6] = 2; 	qrAlgo->A[7] = 3; 	qrAlgo->A[8] = -4;
 		break;
 	}
-	case 1: {
-		//qrAlgo = new PrimitiveQR(n);
-		qrAlgo = primitiveQR;
-		qrAlgo->generator();
+	case 1: 
+	{
+		qrAlgo = new PrimitiveQR(n);
 		break;
 	}
 	case 2:
 	{
-		//qrAlgo = new RowHouseQR(n);
-		qrAlgo = rowHouseQR;
-		qrAlgo->generator();
+		qrAlgo = new RowHouseQR(n);
 		break;
 	}
 	case 3: 
 	{
-		//qrAlgo = new MultiplicationQR(n);
-		qrAlgo = multiplicationQR;
-		qrAlgo->generator();
+		qrAlgo = new MultiplicationQR(n);
 		break;
 	}
 	case 4:
 	{
-		qrAlgo = finalSequenceQR;
-		qrAlgo->generator();
+		qrAlgo = new FinalSequenceQR(n);
+		break;
+	}
+	case 5:
+	{
+		int count_threads = 2;
+		omp_set_num_threads(count_threads);
+		qrAlgo = new ParallelQR(n);
+		break;
+	}
+	case 6:
+	{
+		int count_threads = 4;
+		omp_set_num_threads(count_threads);
+		qrAlgo = new ParallelQR(n);
+		break;
+	}
+	case 7:
+	{
+		//omp_set_nested(true);   // ?
+		int count_threads = 8;
+		omp_set_num_threads(count_threads);
+		qrAlgo = new ParallelQR(n);
 		break;
 	}
 	default:
 		break;
 
 	}
+
+	//#pragma omp parallel
+//		{
+//			int np = omp_get_num_threads();
+//			cout << "num threads = " << np << endl;
+//		}
+	qrAlgo->generator();
 
 	double start_decomp = omp_get_wtime();
 
@@ -125,11 +148,11 @@ int main() {
 	double delta_q = end_q - start_q;
 	std::cout << "Time for simple version of Q: " << delta_q << std::endl;
 
-	//std::cout << "Matrix Q:" << std::endl;
-	//print_matrix(qrAlgo->get_Q(), n);
+	////std::cout << "Matrix Q:" << std::endl;
+	////print_matrix(qrAlgo->get_Q(), n);
 
-	//std::cout << "Matrix R:" << std::endl;
-	//print_matrix(qrAlgo->get_R(), n);
+	////std::cout << "Matrix R:" << std::endl;
+	////print_matrix(qrAlgo->get_R(), n);
 
 	qrAlgo->check_result();
 
@@ -156,11 +179,11 @@ int main() {
 	end_q = omp_get_wtime();
 	delta_q = end_q - start_q;
 	cout << "Time for eigen version of Q: " << delta_q << endl;
-	//cout << "Matrix q " << endl << thinQ << endl;
-	//cout << "Matrix r " << endl;
-	//cout << r << endl;
+	////cout << "Matrix q " << endl << thinQ << endl;
+	////cout << "Matrix r " << endl;
+	////cout << r << endl;
 
-	check_with_eigen_result(qrAlgo->get_Q(), qrAlgo->get_R(), thinQ, r, n);
+	//check_with_eigen_result(qrAlgo->get_Q(), qrAlgo->get_R(), thinQ, r, n);
 	// точность eigen в L2
 	return 0;
 }

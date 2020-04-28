@@ -1,4 +1,7 @@
 #pragma once
+
+#include <omp.h>
+
 namespace QR {
 
 	void print_matrix(double* MatrixA, int Size);
@@ -8,13 +11,20 @@ protected:
 	int n;
 	double* Q, *R;
 	double* P; // matrix of v vectors;
-	double Norma(double* x, int size);
+	virtual double Norma(double* x, int size);
 
-	void copy_matrix(double* &destiny, double* &source);
+	virtual void copy_matrix(double* &destiny, double* &source);
 	double* CreateMatrix_V(double* v);
 public:
 	double* A;
 	QRAlgorithm(int _n);
+	~QRAlgorithm()
+	{
+		delete[] A;
+		delete[] Q;
+		delete[] R;
+		delete[] P;
+	}
 	void generator();
 	virtual void QRDecomposition() = 0;
 	virtual void QSelector() = 0;
@@ -50,6 +60,20 @@ public:
 	FinalSequenceQR(int _n) : RowHouseQR(_n) {};
 	void QRDecomposition();
     void QSelector() override;
+};
+
+
+class ParallelQR : public QRAlgorithm {
+protected:
+	virtual double Norma(double* x, int size) override;
+
+	virtual void copy_matrix(double* &destiny, double* &source) override;
+	void row_house(double*& _A, double* v, int size, int k);
+public:
+	ParallelQR(int _n) : QRAlgorithm(_n) {};
+
+	void QRDecomposition() override;
+	void QSelector() override;
 };
 
 }

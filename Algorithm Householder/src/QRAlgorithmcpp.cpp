@@ -11,12 +11,6 @@ QRAlgorithm::QRAlgorithm(int _n) {
 	Q = new double[n * n];
 	R = new double[n * n];
 	P = new double[n * n]; // matrix of the v vectors
-	//for (int i = 0; i < n; i++) {
-	//	A[i] = new double[n];
-	//	Q[i] = new double[n];
-	//	R[i] = new double[n];
-	//	P[i] = new double[n];
-	//}
 }
 
 void QRAlgorithm::generator() {
@@ -54,7 +48,6 @@ void QRAlgorithm::copy_matrix(double* &destiny, double* &source) {
 double* QRAlgorithm::CreateMatrix_V(double* v) {
 	double* V = new double[n * n];
 	for (int i = 0; i < n; i++) {
-		//V[i] = new double[n];
 		for (int j = 0; j < n; j++) {
 			double val = v[i] * v[j];
 			V[i* n + j] = val;
@@ -68,7 +61,7 @@ void QRAlgorithm::check_result() {
 	cout << "Check result matrices... " << endl;
 	bool flag_ok = true;
 	cout << "Check matrix R: " << endl;
-	double eps = pow(10, -10); //10 ^ (-10);
+	double eps = pow(10, -7); //10 ^ (-7);
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			if (i > j) {
@@ -89,9 +82,6 @@ void QRAlgorithm::check_result() {
 
 	cout << "Check A = Q*R: " << endl;
 	double* tmp_matrix = new double[n * n];
-	//for (int i = 0; i < n; i++) {
-	//	tmp_matrix[i] = new double[n];
-	//}
 
 	multiplication(Q, R, tmp_matrix, n);
 	// checking norma(A-QR)?
@@ -161,8 +151,6 @@ void PrimitiveQR::QRDecomposition() {
 		double* P_current = new double[n * n];
 		double* tmpMatrix = new double[n * n];
 		for (int i = 0; i < n; i++) {
-			//P_current[i] = new double[n];
-			//tmpMatrix[i] = new double[n];
 			for (int j = 0; j < n; j++) {
 				double val = (i == j ? 1 : 0) - V[i * n + j] * 2 / norm;
 				P_current[i * n + j] = val;
@@ -173,11 +161,6 @@ void PrimitiveQR::QRDecomposition() {
 		//if (n >= 100 && k % 10 == 0)
 		//	cout << "... k = " << k << endl;
 		copy_matrix(R, tmpMatrix);
-		//for (int i = 0; i < n; i++) {
-		//	delete P_current[i];
-		//	delete V[i];
-		//	delete tmpMatrix[i];
-		//}
 		delete V;
 		delete P_current;
 		delete tmpMatrix;
@@ -198,8 +181,6 @@ void PrimitiveQR::QSelector() {
 		double* P_current = new double[n * n];
 		double* tmpMatrix = new double[n * n];
 		for (int i = 0; i < n; i++) {
-			//P_current[i] = new double[n];
-			//tmpMatrix[i] = new double[n];
 			for (int j = 0; j < n; j++) {
 				double val = (i == j ? 1 : 0) - V[i* n +j] * 2;
 				P_current[i* n + j] = val;
@@ -216,12 +197,6 @@ void PrimitiveQR::QSelector() {
 		//if (n >= 100 && k % 10 == 0)
 		//	cout << "... k = " << k << endl;
 		// clear
-		//for (int i = 0; i < n; i++) {
-		//	delete V[i];
-		//	delete P_current[i];
-		//	delete tmpMatrix[i];
-		//}
-
 		delete P_current;
 		delete V;
 	}
@@ -349,7 +324,6 @@ void MultiplicationQR::QSelector() {
 
 	// initialize E
 	for (int i = 0; i < n; i++) {
-		//E[i] = new double[n];
 		for (int j = 0; j < n; j++) {
 			if (i == j)
 				E[i* n + j] = 1;
@@ -369,7 +343,6 @@ void MultiplicationQR::QSelector() {
 
 		double* Q_small = new double[r * r];
 		for (int i = r - 1; i >= 0; i--) {
-			//Q_small[i] = new double[r];
 			for (int j = r - 1; j >= 0; j--)
 				Q_small[i* (r) + j] = Q[(i + k) * (n) + (j + k)];
 		}
@@ -391,8 +364,6 @@ void MultiplicationQR::QSelector() {
 		//clear
 		delete v;
 		delete v_small;
-		//for (int i = 0; i < r; i++)
-		//	delete[] Q_small[i];
 		delete Q_small;
 	}
 }
@@ -446,12 +417,121 @@ void FinalSequenceQR::QSelector() {
 		for (int i = 0; i < n; i++) {
 			v[i] = P[i* n + k];	
 		}
-		//int r = n - k;
-
 	    row_house(Q, v, n, k);
 
 		//if (n >= 100 && k % 10 == 0)
 		//	cout << "... k = " << k << endl;
+
+	}
+	//clear
+	delete v;
+}
+
+// Parallel
+void ParallelQR::copy_matrix(double* &destiny, double* &source) {
+#pragma omp parallel for
+	for (int i = 0; i < n*n; i++) {
+		destiny[i] = source[i];
+	}
+}
+
+double ParallelQR::Norma(double* x, int size) {
+	double sum = 0;
+#pragma omp parallel for reduction(+:sum)
+	for (int i = 0; i < size; i++)
+		sum += x[i] * x[i];
+	return sum;
+}
+
+void ParallelQR::row_house(double*& _A, double* v, int size, int k) {
+	double norm = QRAlgorithm::Norma(v, size);
+	double beta = -2 / norm;
+
+	double* w = new double[size];
+	int j = k;
+#pragma omp parallel for
+	for (int i = k; i < size; i++) {
+		double ThreadResult = 0;
+#pragma omp parallel for reduction(+:ThreadResult)
+		for (int j = k; j < size; j++)
+			ThreadResult += _A[j*size + i] * v[j];
+		w[i] = ThreadResult;
+	}
+
+//#pragma omp parallel for private(j)
+//	for (int i = k; i < size; i++) {
+//		w[i] = 0;
+//		for (j = k; j < size; j++) {
+//			w[i] += _A[j* size + i] * v[j];
+//		}
+//		//w[i] *= beta;
+//	}
+
+#pragma omp parallel for private(j)
+	for (int i = k; i < size; i++) {
+		for (j = k; j < size; j++) {
+			_A[i* size + j] += v[i] * w[j] * beta;
+		}
+	}
+
+	delete[] w;
+}
+
+void ParallelQR::QRDecomposition() {
+	copy_matrix(R, A);
+	double* v = new double[n];
+	double* x = new double[n]; //столбец матрицы
+
+	for (int k = 0; k < n - 1; k++) {
+
+//#pragma omp parallel for
+		for (int j = 0; j < n; j++) {
+			if (j < k)
+				x[j] = 0;
+			else
+				x[j] = R[j* n + k];
+		}
+		double norma_x = sqrt(Norma(x, n));
+
+//#pragma omp parallel for
+		for (int i = 0; i < n; i++) {
+			int signum = R[k* n + k] > 0 ? 1 : -1;
+			if (i < k) {
+				v[i] = 0;
+			}
+			else {
+				v[i] = R[i* n + k] + (i == k ? signum * norma_x : 0);
+			}
+		}
+		double norm = Norma(v, n);
+
+		// variant from GolubVanLoun
+		row_house(R, v, n, 0);
+
+//#pragma omp parallel for
+		// add v to P matrix as a column
+		for (int i = 0; i < n; i++) {
+			P[i* n + k] = v[i] / sqrt(norm);
+		}
+	}
+	delete v;
+	delete x;
+}
+
+void ParallelQR::QSelector() {
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			Q[i* n + j] = i == j ? 1 : 0;
+		}
+	}
+	double* v = new double[n];
+	for (int k = n - 2; k >= 0; k--) {
+//#pragma omp parallel for
+		for (int i = 0; i < n; i++) {
+			v[i] = P[i* n + k];
+		}
+
+		row_house(Q, v, n, k);
 
 	}
 	//clear
