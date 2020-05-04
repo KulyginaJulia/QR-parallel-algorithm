@@ -53,8 +53,8 @@ int main(int argc, char **argv) {
 	//cout << "Please choose mode: 0 - Test mode with definitly 3x3 matrix, 1 - primitive version, 2 - rowHouse version, 3 - multipilication version, 4 - final sequence version" << endl;
 
 	int n, mode;
-	mode = atoi(argv[1]);
-	n = atoi(argv[2]);
+	mode = 0; // atoi(argv[1]);
+	n = 3;// atoi(argv[2]);
 
 	//cin >> mode;
 	//cout << "Please enter size of matrix: ";
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 	switch (mode) {
 	case 0:
 	{
-		qrAlgo = new FinalSequenceQR(n);
+		qrAlgo = new GivensRotation(n);
 		qrAlgo->A[0] = 1;	qrAlgo->A[1] = -2;	qrAlgo->A[2] = 1;
 		qrAlgo->A[3] = 2; 	qrAlgo->A[4] = -1; 	qrAlgo->A[5] = 3;
 		qrAlgo->A[6] = 2; 	qrAlgo->A[7] = 3; 	qrAlgo->A[8] = -4;
@@ -111,7 +111,6 @@ int main(int argc, char **argv) {
 	}
 	case 7:
 	{
-		//omp_set_nested(true);   // ?
 		int count_threads = 8;
 		omp_set_num_threads(count_threads);
 		qrAlgo = new ParallelQR(n);
@@ -127,7 +126,7 @@ int main(int argc, char **argv) {
 //			int np = omp_get_num_threads();
 //			cout << "num threads = " << np << endl;
 //		}
-	qrAlgo->generator();
+	//qrAlgo->generator();
 
 	double start_decomp = omp_get_wtime();
 
@@ -163,25 +162,25 @@ int main(int argc, char **argv) {
 	}
 	auto qr = m.householderQr(); // casted type Matrix -> Householder matrix
 
-	start_decomp = omp_get_wtime();
-	
+	//start_decomp = omp_get_wtime();
+	//
 	auto r = qr.matrixQR(); // qr decomposition, r - upper triangle, vectors v - lower triangle
 
-	end_decomp = omp_get_wtime();
-	delta_decomp = end_decomp - start_decomp;
-	cout << "Time for eigen version of decomposition: " << delta_decomp << endl;
+	//end_decomp = omp_get_wtime();
+	//delta_decomp = end_decomp - start_decomp;
+	//cout << "Time for eigen version of decomposition: " << delta_decomp << endl;
 
-	start_q = omp_get_wtime();
+	//start_q = omp_get_wtime();
 	auto q = qr.householderQ(); // selection q
 
 	Eigen::MatrixXd thinQ(Eigen::MatrixXd::Identity(n, n));
 	thinQ = q * thinQ;
-	end_q = omp_get_wtime();
-	delta_q = end_q - start_q;
-	cout << "Time for eigen version of Q: " << delta_q << endl;
-	////cout << "Matrix q " << endl << thinQ << endl;
-	////cout << "Matrix r " << endl;
-	////cout << r << endl;
+	//end_q = omp_get_wtime();
+	//delta_q = end_q - start_q;
+	//cout << "Time for eigen version of Q: " << delta_q << endl;
+	cout << "Matrix q " << endl << thinQ << endl;
+	cout << "Matrix r " << endl;
+	cout << r << endl;
 
 	//check_with_eigen_result(qrAlgo->get_Q(), qrAlgo->get_R(), thinQ, r, n);
 	// точность eigen в L2

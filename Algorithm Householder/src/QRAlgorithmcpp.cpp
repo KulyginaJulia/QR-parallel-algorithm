@@ -537,3 +537,59 @@ void ParallelQR::QSelector() {
 	//clear
 	delete v;
 }
+
+void GivensRotation::givens(double a, double b, double &c, double &s) {
+	if (b == 0) {
+		c = 1;
+		s = 0;
+		return;
+	}
+
+	if (abs(b) > abs(a)) {
+		double tao = -a / b;
+		s = 1 / sqrt(1 + tao * tao);
+		c = s * tao;
+	}
+	else {
+		double tao = -b / a;
+		c = 1 / sqrt(1 + tao * tao);
+		s = c * tao;
+	}
+}
+
+void GivensRotation::rowRotation(double*& A, double c, double s, int _i, int _j) {
+
+	for (int j = _j; j < n; j++) {
+		int index1 = _i - 1 * n + j;
+		int index2 = _i * n + j;
+		double tao1 = A[index1];
+		double tao2 = A[index2];
+		A[index1] = c * tao1 - s * tao2;
+		A[index2] = s * tao1 + c * tao2;
+	}
+}
+
+
+void GivensRotation::QRDecomposition() {
+	copy_matrix(R, A);
+
+	cout << "Matrix R = " << endl;
+	print_matrix(R, n);
+
+	for (int j = 0; j < n - 1; j++) {
+		for (int i = n - 1; i > 0; i -= j + 1) {
+			cout << "Step i = " << i << " j = " << j <<  endl;
+			double c, s;
+			givens(R[(i - 1) * n + j], R[i * n + j], c, s);
+			cout << "c = " << c << "  s = " << s << endl;
+			rowRotation(R, c, s, i, j);
+
+			print_matrix(R, n);
+
+		}
+	}
+}
+
+void GivensRotation::QSelector() {
+
+}

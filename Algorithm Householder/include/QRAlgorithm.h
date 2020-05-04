@@ -76,4 +76,14 @@ public:
 	void QSelector() override;
 };
 
+class GivensRotation : public QRAlgorithm {
+protected:
+	void givens(double a, double b, double &c, double &s);
+	void rowRotation(double*& A, double c, double s, int _i, int _j);
+public:
+	GivensRotation(int _n) : QRAlgorithm(_n) {};
+	virtual void QRDecomposition();
+	virtual void QSelector();
+};
+
 }
