@@ -255,8 +255,8 @@ void RowHouseQR::row_house(double*& _A, double* v, int size, int k) {
 void QR::print_matrix(double* MatrixA, int Size) {
 	for (int i = 0; i < Size; i++) {
 		for (int j = 0; j < Size; j++) {
-			//cout << fixed;
-			//cout.precision(6);
+			cout << fixed;
+			cout.precision(6);
 			cout << MatrixA[i* Size + j] << ' ';
 		}
 		cout << endl;
@@ -544,23 +544,26 @@ void GivensRotation::givens(double a, double b, double &c, double &s) {
 		s = 0;
 		return;
 	}
-
+	//double r = abs(sqrt(a*a + b*b));
+	//c = a / r;
+	//s = -b / r;
 	if (abs(b) > abs(a)) {
 		double tao = -a / b;
-		s = 1 / sqrt(1 + tao * tao);
+		s = 1 / sqrt(1 + tao * tao); // -1?
 		c = s * tao;
 	}
 	else {
+        //double signum_a = a > 0 ? 1 : -1;
 		double tao = -b / a;
 		c = 1 / sqrt(1 + tao * tao);
 		s = c * tao;
 	}
 }
-
+// A = GT*A
 void GivensRotation::rowRotation(double*& A, double c, double s, int _i, int _j) {
 
 	for (int j = _j; j < n; j++) {
-		int index1 = _i - 1 * n + j;
+		int index1 = (_i - 1) * n + j;
 		int index2 = _i * n + j;
 		double tao1 = A[index1];
 		double tao2 = A[index2];
@@ -568,28 +571,105 @@ void GivensRotation::rowRotation(double*& A, double c, double s, int _i, int _j)
 		A[index2] = s * tao1 + c * tao2;
 	}
 }
+// A = A*GT
+void GivensRotation::columnRotation(double*& A, double c, double s, int _i, int _j) {
 
+	for (int i = 0; i < n; i++) {
+		int index1 = i * n + _j;
+		int index2 = i * n + _j + 1;
+		double tao1 = A[index1];
+		double tao2 = A[index2];
+		A[index1] = c * tao1 - s * tao2;
+		A[index2] = s * tao1 + c * tao2;
+	}
+}
+
+int GivensRotation::calculateP(double c, double s) {
+	if (c == 0) {
+		return 1;
+	}
+	else if (abs(s) < abs(c)) {
+		int signum = c > 0 ? 1 : -1;
+		return signum * s / 2;
+	}
+	else {
+		int signum = s > 0 ? 1 : -1;
+		return 2 * signum / c;
+	}
+}
 
 void GivensRotation::QRDecomposition() {
 	copy_matrix(R, A);
 
 	cout << "Matrix R = " << endl;
 	print_matrix(R, n);
-
+	int count = 0;
 	for (int j = 0; j < n - 1; j++) {
-		for (int i = n - 1; i > 0; i -= j + 1) {
+		for (int i = n-1; i > 0; i -= j + 1) {
 			cout << "Step i = " << i << " j = " << j <<  endl;
 			double c, s;
 			givens(R[(i - 1) * n + j], R[i * n + j], c, s);
 			cout << "c = " << c << "  s = " << s << endl;
 			rowRotation(R, c, s, i, j);
-
-			print_matrix(R, n);
-
+			//p[i * (n) + j] = calculateP(c, s);
+			//cout << "index = " << i * (n) + j << "  p = " << p[i * (n) + j] << endl;
+			cout << "index = " << count << endl;
+			coeffsC[count] = c;
+			coeffsS[count] = s;
+			//print_matrix(R, n);
+			count++;
 		}
+	}
+
+	//print_matrix(R, n);
+}
+void GivensRotation::calculateCSfromP(double p, double &c, double &s) {
+	if (p == 1) {
+		c = 0;
+		s = 1;
+	}
+	else if (abs(p) < 1) {
+		s = 2 * p;
+		c = sqrt(1 - s * s);
+	}
+	else {
+		c = 2 / p;
+		s = sqrt(1 - c * c);
 	}
 }
 
-void GivensRotation::QSelector() {
+void copyG1toQ(double*& Q, double c, double s, int n) {
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			int index = i * n + j;
+			Q[index] = i == j ? 1 : 0;
+		}
+	}
+	int index = (n - 2) * n + n - 2;
+	Q[(n - 2) * n + n - 2] = c;
+	Q[(n - 2) * n + n - 1] = -s;
+	Q[(n - 1) * n + n - 2] = s;
+	Q[(n - 1) * n + n - 1] = c;
 
+}
+void GivensRotation::QSelector() {
+	int count = 0;
+	for (int j = 0; j < n - 1; j++) {
+		for (int i = n - 1; i > 0; i -= j + 1) {
+			double c = coeffsC[count], s = coeffsS[count];
+			count++;
+			//calculateCSfromP(p[i* (n) + j], c, s);
+			if (count ==  1) {
+				copyG1toQ(Q, c, s, n);
+				//cout << "G1: " << endl;
+				//print_matrix(Q, n);
+				continue;
+			}
+			columnRotation(Q, c, s, i, j);
+			//cout << "After rotation " << endl;
+			//print_matrix(Q, n);
+		}
+	}
+
+	//print_matrix(Q, n);
 }

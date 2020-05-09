@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 	//cout << "Please choose mode: 0 - Test mode with definitly 3x3 matrix, 1 - primitive version, 2 - rowHouse version, 3 - multipilication version, 4 - final sequence version" << endl;
 
 	int n, mode;
-	mode = 0; // atoi(argv[1]);
+	mode = atoi(argv[1]);
 	n = 3;// atoi(argv[2]);
 
 	//cin >> mode;
@@ -67,11 +67,20 @@ int main(int argc, char **argv) {
 	QRAlgorithm *qrAlgo;
 
 	switch (mode) {
+	case -1:
+	{
+		// example from wiki
+		qrAlgo = new GivensRotation(n);
+		qrAlgo->A[0] = 6;	qrAlgo->A[1] = 5;	qrAlgo->A[2] = 0;
+		qrAlgo->A[3] = 5; 	qrAlgo->A[4] = 1;	qrAlgo->A[5] = 4;
+		qrAlgo->A[6] = 0; 	qrAlgo->A[7] = 4; 	qrAlgo->A[8] = 3;
+		break;
+	}
 	case 0:
 	{
 		qrAlgo = new GivensRotation(n);
 		qrAlgo->A[0] = 1;	qrAlgo->A[1] = -2;	qrAlgo->A[2] = 1;
-		qrAlgo->A[3] = 2; 	qrAlgo->A[4] = -1; 	qrAlgo->A[5] = 3;
+		qrAlgo->A[3] = 2; 	qrAlgo->A[4] = -1;	qrAlgo->A[5] = 3;
 		qrAlgo->A[6] = 2; 	qrAlgo->A[7] = 3; 	qrAlgo->A[8] = -4;
 		break;
 	}
@@ -147,11 +156,11 @@ int main(int argc, char **argv) {
 	double delta_q = end_q - start_q;
 	std::cout << "Time for simple version of Q: " << delta_q << std::endl;
 
-	////std::cout << "Matrix Q:" << std::endl;
-	////print_matrix(qrAlgo->get_Q(), n);
+	std::cout << "Matrix Q:" << std::endl;
+	print_matrix(qrAlgo->get_Q(), n);
 
-	////std::cout << "Matrix R:" << std::endl;
-	////print_matrix(qrAlgo->get_R(), n);
+	std::cout << "Matrix R:" << std::endl;
+	print_matrix(qrAlgo->get_R(), n);
 
 	qrAlgo->check_result();
 
