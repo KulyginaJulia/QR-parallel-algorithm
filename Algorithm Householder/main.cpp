@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 
 	int n, mode;
 	mode = atoi(argv[1]);
-	n = 3;// atoi(argv[2]);
+	n = atoi(argv[2]);
 
 	//cin >> mode;
 	//cout << "Please enter size of matrix: ";
@@ -125,6 +125,11 @@ int main(int argc, char **argv) {
 		qrAlgo = new ParallelQR(n);
 		break;
 	}
+	case 8:
+	{
+		qrAlgo = new GivensRotation(n);
+		break;
+	}
 	default:
 		break;
 
@@ -135,7 +140,7 @@ int main(int argc, char **argv) {
 //			int np = omp_get_num_threads();
 //			cout << "num threads = " << np << endl;
 //		}
-	//qrAlgo->generator();
+	qrAlgo->generator();
 
 	double start_decomp = omp_get_wtime();
 
@@ -156,11 +161,11 @@ int main(int argc, char **argv) {
 	double delta_q = end_q - start_q;
 	std::cout << "Time for simple version of Q: " << delta_q << std::endl;
 
-	std::cout << "Matrix Q:" << std::endl;
-	print_matrix(qrAlgo->get_Q(), n);
+	//std::cout << "Matrix Q:" << std::endl;
+	//print_matrix(qrAlgo->get_Q(), n);
 
-	std::cout << "Matrix R:" << std::endl;
-	print_matrix(qrAlgo->get_R(), n);
+	//std::cout << "Matrix R:" << std::endl;
+	//print_matrix(qrAlgo->get_R(), n);
 
 	qrAlgo->check_result();
 
@@ -187,9 +192,9 @@ int main(int argc, char **argv) {
 	//end_q = omp_get_wtime();
 	//delta_q = end_q - start_q;
 	//cout << "Time for eigen version of Q: " << delta_q << endl;
-	cout << "Matrix q " << endl << thinQ << endl;
-	cout << "Matrix r " << endl;
-	cout << r << endl;
+	//cout << "Matrix q " << endl << thinQ << endl;
+	//cout << "Matrix r " << endl;
+	//cout << r << endl;
 
 	//check_with_eigen_result(qrAlgo->get_Q(), qrAlgo->get_R(), thinQ, r, n);
 	// точность eigen в L2

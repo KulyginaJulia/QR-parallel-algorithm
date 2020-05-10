@@ -79,18 +79,17 @@ public:
 class GivensRotation : public QRAlgorithm {
 protected:
 	void givens(double a, double b, double &c, double &s);
-	void rowRotation(double*& A, double c, double s, int _i, int _j);
-	void columnRotation(double*& A, double c, double s, int _i, int _j);
-	int calculateP(double c, double s);
+	void rowRotation(double*& A, double c, double s, int _i);
+	void columnRotation(double*& A, double c, double s, int _j);
+	double calculateP(double c, double s);
 	void calculateCSfromP(double p, double &c, double &s);
-	int *p;
 
-	double* coeffsC, *coeffsS;
+	double *p;
+
 public:
 	GivensRotation(int _n) : QRAlgorithm(_n) {
-		p = new int[n];
-		coeffsC = new double[n];
-		coeffsS = new double[n];
+		int size = (n*n - n) / 2;
+		p = new double[size];
 	};
 	virtual void QRDecomposition();
 	virtual void QSelector();
