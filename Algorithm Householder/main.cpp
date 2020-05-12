@@ -130,16 +130,32 @@ int main(int argc, char **argv) {
 		qrAlgo = new GivensRotation(n);
 		break;
 	}
+	case 9:
+	{
+		int count_threads = 2;
+		omp_set_num_threads(count_threads);
+		qrAlgo = new ParallelGivensRotation(n);
+		break;
+	}
+	case 10:
+	{
+		int count_threads = 4;
+		omp_set_num_threads(count_threads);
+		qrAlgo = new ParallelGivensRotation(n);
+		break;
+	}
+	case 11:
+	{
+		int count_threads = 8;
+		omp_set_num_threads(count_threads);
+		qrAlgo = new ParallelGivensRotation(n);
+		break;
+	}
 	default:
 		break;
 
 	}
 
-	//#pragma omp parallel
-//		{
-//			int np = omp_get_num_threads();
-//			cout << "num threads = " << np << endl;
-//		}
 	qrAlgo->generator();
 
 	double start_decomp = omp_get_wtime();
@@ -148,8 +164,6 @@ int main(int argc, char **argv) {
 
 	double end_decomp = omp_get_wtime();
 	double delta_decomp = end_decomp - start_decomp;
-
-
 
 	cout << "Done QR decomposition" << endl;
 	std::cout << "Time for simple version of decomposition: " << delta_decomp << std::endl;
@@ -169,26 +183,26 @@ int main(int argc, char **argv) {
 
 	qrAlgo->check_result();
 
-	Eigen::MatrixXd m(n, n);
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++)
-			m(i, j) = qrAlgo->A[i*n + j];
-	}
-	auto qr = m.householderQr(); // casted type Matrix -> Householder matrix
+	//Eigen::MatrixXd m(n, n);
+	//for (int i = 0; i < n; i++) {
+	//	for (int j = 0; j < n; j++)
+	//		m(i, j) = qrAlgo->A[i*n + j];
+	//}
+	//auto qr = m.householderQr(); // casted type Matrix -> Householder matrix
 
 	//start_decomp = omp_get_wtime();
 	//
-	auto r = qr.matrixQR(); // qr decomposition, r - upper triangle, vectors v - lower triangle
+	//auto r = qr.matrixQR(); // qr decomposition, r - upper triangle, vectors v - lower triangle
 
 	//end_decomp = omp_get_wtime();
 	//delta_decomp = end_decomp - start_decomp;
 	//cout << "Time for eigen version of decomposition: " << delta_decomp << endl;
 
 	//start_q = omp_get_wtime();
-	auto q = qr.householderQ(); // selection q
+	//auto q = qr.householderQ(); // selection q
 
-	Eigen::MatrixXd thinQ(Eigen::MatrixXd::Identity(n, n));
-	thinQ = q * thinQ;
+	//Eigen::MatrixXd thinQ(Eigen::MatrixXd::Identity(n, n));
+	//thinQ = q * thinQ;
 	//end_q = omp_get_wtime();
 	//delta_q = end_q - start_q;
 	//cout << "Time for eigen version of Q: " << delta_q << endl;

@@ -79,8 +79,8 @@ public:
 class GivensRotation : public QRAlgorithm {
 protected:
 	void givens(double a, double b, double &c, double &s);
-	void rowRotation(double*& A, double c, double s, int _i);
-	void columnRotation(double*& A, double c, double s, int _j);
+	virtual void rowRotation(double*& A, double c, double s, int _i);
+	virtual void columnRotation(double*& A, double c, double s, int _j);
 	double calculateP(double c, double s);
 	void calculateCSfromP(double p, double &c, double &s);
 
@@ -93,6 +93,14 @@ public:
 	};
 	virtual void QRDecomposition();
 	virtual void QSelector();
+};
+
+class ParallelGivensRotation : public GivensRotation {
+protected:
+	virtual void rowRotation(double*& A, double c, double s, int _i) override;
+	virtual void columnRotation(double*& A, double c, double s, int _j) override;
+public:
+	ParallelGivensRotation(int _n) : GivensRotation(_n) {};
 };
 
 }

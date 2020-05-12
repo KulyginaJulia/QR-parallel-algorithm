@@ -1,6 +1,7 @@
 #include "../include/QRAlgorithm.h"
 #include <iostream>
 #include <cmath>
+#include <ctime>
 
 using namespace std;
 using namespace QR;
@@ -14,9 +15,12 @@ QRAlgorithm::QRAlgorithm(int _n) {
 }
 
 void QRAlgorithm::generator() {
+	srand(unsigned(std::time(0)));
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			A[i*n + j] = rand() % 100;
+			double value = rand() % 100;
+			A[i*n + j] = value;
+			R[i*n + j] = value;
 		}
 	}
 }
@@ -118,11 +122,9 @@ void QRAlgorithm::check_result() {
 }
 
 void PrimitiveQR::QRDecomposition() {
-	copy_matrix(R, A);	
 	double* v = new double[n];
 	double* x = new double[n]; //столбец матрицы
 	for (int k = 0; k < n - 1; k++) {
-		// cout << "Step " << k << endl;
 		for (int j = 0; j < n; j++) {
 			if (j < k)
 				x[j] = 0;
@@ -158,8 +160,7 @@ void PrimitiveQR::QRDecomposition() {
 		}
 
 		multiplication(P_current, R, tmpMatrix, n);
-		//if (n >= 100 && k % 10 == 0)
-		//	cout << "... k = " << k << endl;
+
 		copy_matrix(R, tmpMatrix);
 		delete V;
 		delete P_current;
@@ -194,8 +195,6 @@ void PrimitiveQR::QSelector() {
 			multiplication(P_current, Q, tmpMatrix, n);
 			copy_matrix(Q, tmpMatrix);
 		}
-		//if (n >= 100 && k % 10 == 0)
-		//	cout << "... k = " << k << endl;
 		// clear
 		delete P_current;
 		delete V;
@@ -263,21 +262,6 @@ void QR::print_matrix(double* MatrixA, int Size) {
 	}
 }
 void RowHouseQR::QRDecomposition() {
-	double** E = new double*[n];
-
-	// initialize E
-	for (int i = 0; i < n; i++) {
-		E[i] = new double[n];
-		for (int j = 0; j < n; j++) {
-			if (i == j)
-				E[i][j] = 1;
-			else
-				E[i][j] = 0;
-		}
-	}
-
-	copy_matrix(R, A);
-
 	for (int k = 0; k < n - 1; k++) {
 		double* v = new double[n];
 		double* x = new double[n]; //столбец матрицы
@@ -294,7 +278,7 @@ void RowHouseQR::QRDecomposition() {
 				v[i] = 0;
 			}
 			else {
-				v[i] = R[i* n + k] + signum * norma_x * E[i][k];
+				v[i] = R[i* n + k] + signum * norma_x * (i == k ? 1 : 0); // *E[i][k];
 			}
 
 		}
@@ -307,35 +291,23 @@ void RowHouseQR::QRDecomposition() {
 		for (int i = 0; i < n; i++) {
 			P[i* n + k] = v[i] / sqrt(norm);
 		}
-
-		//if (n >= 100 && k % 10 == 0)
-		//	cout << "... k = " << k << endl;
 		delete v;
 	}
-
-	for (int i = 0; i < n; i++) {
-		delete E[i];
-	}
-	delete E;
 }
 
 void MultiplicationQR::QSelector() {
-	double* E = new double[n * n];
-
 	// initialize E
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
 			if (i == j)
-				E[i* n + j] = 1;
+				Q[i* n + j] = 1;
 			else
-				E[i* n + j] = 0;
+				Q[i* n + j] = 0;
 		}
 	}
-	copy_matrix(Q, E);
 
 	for (int k = n - 2; k >= 0; k--) {
 		double* v = new double[n];
-		//cout << "Step = " << k << endl << endl;
 		for (int i = 0; i < n; i++) {
 			v[i] = P[i* n + k];
 		}
@@ -358,9 +330,6 @@ void MultiplicationQR::QSelector() {
 			for (int j = r - 1; j >= 0; j--)
 				Q[(i + k) * (n) + (j + k)] = Q_small[i* (r) + j];
 		}
-
-		//if (n >= 100 && k % 10 == 0)
-		//	cout << "... k = " << k << endl;
 		//clear
 		delete v;
 		delete v_small;
@@ -368,7 +337,6 @@ void MultiplicationQR::QSelector() {
 	}
 }
 void FinalSequenceQR::QRDecomposition() {
-	copy_matrix(R, A);
 	double* v = new double[n];
 	double* x = new double[n]; //столбец матрицы
 	for (int k = 0; k < n - 1; k++) {
@@ -397,9 +365,6 @@ void FinalSequenceQR::QRDecomposition() {
 		for (int i = 0; i < n; i++) {
 			P[i* n + k] = v[i] / sqrt(norm);
 		}
-
-		//if (n >= 100 && k % 10 == 0)
-		//	cout << "... k = " << k << endl;
 	}
 	delete v;
 	delete x;
@@ -413,14 +378,10 @@ void FinalSequenceQR::QSelector() {
 	}
 	double* v = new double[n];
 	for (int k = n - 2; k >= 0; k--) {
-		//cout << "Step = " << k << endl << endl;
 		for (int i = 0; i < n; i++) {
 			v[i] = P[i* n + k];	
 		}
 	    row_house(Q, v, n, k);
-
-		//if (n >= 100 && k % 10 == 0)
-		//	cout << "... k = " << k << endl;
 
 	}
 	//clear
@@ -478,7 +439,6 @@ void ParallelQR::row_house(double*& _A, double* v, int size, int k) {
 }
 
 void ParallelQR::QRDecomposition() {
-	copy_matrix(R, A);
 	double* v = new double[n];
 	double* x = new double[n]; //столбец матрицы
 
@@ -596,8 +556,6 @@ double GivensRotation::calculateP(double c, double s) {
 }
 
 void GivensRotation::QRDecomposition() {
-	copy_matrix(R, A);
-
 	int count = 0;
 	for (int j = 0; j < n - 1; j++) {
 		for (int i = n - 1; i > j; i--) {
@@ -624,32 +582,45 @@ void GivensRotation::calculateCSfromP(double p, double &c, double &s) {
 	}
 }
 
-void copyG1toQ(double*& Q, double c, double s, int n) {
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < n; j++) {
-			int index = i * n + j;
-			Q[index] = i == j ? 1 : 0;
-		}
-	}
-	Q[(n - 2) * n + n - 2] = c;
-	Q[(n - 2) * n + n - 1] = s;
-	Q[(n - 1) * n + n - 2] = -s;
-	Q[(n - 1) * n + n - 1] = c;
-
-}
 void GivensRotation::QSelector() {
 	int count = 0;
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			Q[i * n + j] = i == j ? 1 : 0;
+		}
+	}
+
 	for (int j = 0; j < n - 1; j++) {
 		for (int i = n - 1; i > j; i--) {
 			double c, s;
 			calculateCSfromP(p[count], c, s);
 			count++;
-			
-			if (count ==  1) {
-				copyG1toQ(Q, c, s, n);
-				continue;
-			}
 			columnRotation(Q, c, s, i-1);
 		}
+	}
+}
+
+// A = GT*A
+void ParallelGivensRotation::rowRotation(double*& A, double c, double s, int _i) {
+#pragma omp parallel for
+	for (int j = 0; j < n; j++) {
+		int index1 = (_i - 1) * n + j;
+		int index2 = _i * n + j;
+		double tao1 = A[index1];
+		double tao2 = A[index2];
+		A[index1] = c * tao1 - s * tao2;
+		A[index2] = s * tao1 + c * tao2;
+	}
+}
+// A = A*GT
+void ParallelGivensRotation::columnRotation(double*& A, double c, double s, int _j) {
+#pragma omp parallel for
+	for (int i = 0; i < n; i++) {
+		int index1 = i * n + _j;
+		int index2 = i * n + _j + 1;
+		double tao1 = A[index1];
+		double tao2 = A[index2];
+		A[index1] = c * tao1 - s * tao2;
+		A[index2] = s * tao1 + c * tao2;
 	}
 }
